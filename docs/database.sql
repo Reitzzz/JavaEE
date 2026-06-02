@@ -57,9 +57,26 @@ CREATE TABLE IF NOT EXISTS borrow_records (
     CONSTRAINT fk_borrow_book FOREIGN KEY (book_id) REFERENCES books(id)
 );
 
+CREATE TABLE IF NOT EXISTS ai_models (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    model_name VARCHAR(80) NOT NULL UNIQUE,
+    provider VARCHAR(40) NOT NULL DEFAULT 'MiMo',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_settings (
+    id BIGINT PRIMARY KEY,
+    api_key VARCHAR(255) NOT NULL,
+    active_model_id BIGINT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 INSERT IGNORE INTO roles (name, description) VALUES
 ('ROLE_ADMIN', 'System administrator'),
 ('ROLE_READER', 'Library reader');
+
+INSERT IGNORE INTO ai_models (model_name, provider) VALUES
+('mimo-v2.5-pro', 'MiMo');
 
 INSERT IGNORE INTO categories (name, description) VALUES
 ('Java Development', 'Java, Spring Boot and enterprise development books'),

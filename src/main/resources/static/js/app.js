@@ -2,6 +2,8 @@ const state = {
     me: null,
     categories: [],
     books: [],
+    aiModels: [],
+    aiSettings: null,
     loadingButton: null
 };
 
@@ -14,6 +16,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         await loadMe();
         await refreshCategories();
         await refreshBooks();
+        if (isCurrentAdmin()) {
+            await refreshAiSettings();
+            await refreshAiModels();
+        }
         await refreshBorrows(false);
     });
 });
@@ -41,6 +47,8 @@ function bindActions() {
     document.querySelector("#askAiBtn").addEventListener("click", askAi);
     document.querySelector("#categoryForm").addEventListener("submit", saveCategory);
     document.querySelector("#bookForm").addEventListener("submit", saveBook);
+    document.querySelector("#aiSettingsForm").addEventListener("submit", saveAiSettings);
+    document.querySelector("#aiModelForm").addEventListener("submit", saveAiModel);
     document.querySelector("#categoryBooksDialog").addEventListener("click", (event) => {
         if (event.target.id === "categoryBooksDialog") {
             closeCategoryBooksDialog();
@@ -339,6 +347,110 @@ async function askAi() {
         });
         document.querySelector("#aiAnswer").textContent = result.answer;
     });
+}
+
+async function refreshAiModels() {
+    if (!isCurrentAdmin()) {
+        return;
+    }
+    state.aiModels = await api("/api/ai/models");
+    renderAiModels();
+}
+
+async function refreshAiSettings() {
+    if (!isCurrentAdmin()) {
+        return;
+    }
+    state.aiSettings = await api("/api/ai/settings");
+    renderAiSettings();
+}
+
+function renderAiSettings() {
+    const status = document.querySelector("#aiSettingsStatus");
+    if (state.aiSettings?.apiKeyConfigured) {
+        status.textContent = `API Key 已配置：${state.aiSettings.apiKeyMask}`;
+        status.classList.add("success");
+        return;
+    }
+    status.textContent = "API Key 未配置";
+    status.classList.remove("success");
+}
+
+async function saveAiSettings(event) {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const payload = Object.fromEntries(form.entries());
+    await withButton(event.submitter, "保存中", async () => {
+        await api("/api/ai/settings", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        event.target.reset();
+        await refreshAiSettings();
+        showMessage("API Key 已保存，现在可以测试并添加模型");
+    });
+}
+
+function renderAiModels() {
+    const rows = document.querySelector("#aiModelRows");
+    if (state.aiModels.length === 0) {
+        rows.innerHTML = emptyRow(4, "暂无可用模型");
+        return;
+    }
+    rows.innerHTML = state.aiModels.map((model) => `
+        <tr>
+            <td>
+                <code>${escapeHtml(model.modelName)}</code>
+                ${isActiveAiModel(model.id) ? `<span class="badge success">当前使用</span>` : ""}
+            </td>
+            <td>${escapeHtml(model.provider)}</td>
+            <td>${formatTime(model.createdAt)}</td>
+            <td class="actions">
+                <button class="btn secondary" onclick="activateAiModel(${model.id})" type="button" ${isActiveAiModel(model.id) ? "disabled" : ""}>设为使用</button>
+                <button class="btn danger" onclick="deleteAiModel(${model.id})" type="button">删除</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+async function saveAiModel(event) {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const payload = Object.fromEntries(form.entries());
+    await withButton(event.submitter, "测试中", async () => {
+        await api("/api/ai/models", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        event.target.reset();
+        event.target.elements.modelName.value = "mimo-v2.5-pro";
+        await refreshAiModels();
+        await refreshAiSettings();
+        showMessage("模型测试成功，已添加");
+    });
+}
+
+async function activateAiModel(id) {
+    await run(async () => {
+        await api(`/api/ai/models/${id}/activate`, { method: "POST" });
+        await refreshAiSettings();
+        renderAiModels();
+        showMessage("已切换全局使用模型");
+    });
+}
+
+async function deleteAiModel(id) {
+    if (!confirm("确认删除该模型？删除后系统会使用列表中的其他模型或默认配置。")) return;
+    await run(async () => {
+        await api(`/api/ai/models/${id}`, { method: "DELETE" });
+        await refreshAiSettings();
+        await refreshAiModels();
+        showMessage("模型已删除");
+    });
+}
+
+function isActiveAiModel(id) {
+    return Number(state.aiSettings?.activeModelId) === Number(id);
 }
 
 async function withButton(button, loadingText, task) {

@@ -212,6 +212,46 @@
                 </div>
                 <output id="aiAnswer" class="ai-answer">AI 回复会显示在这里。</output>
             </div>
+            <div class="ai-model-panel admin-only">
+                <div class="section-head compact">
+                    <p class="eyebrow">Model Management</p>
+                    <h2>模型管理</h2>
+                </div>
+                <form id="aiSettingsForm" class="panel-form compact-form">
+                    <label class="field">
+                        <span>MiMo API Key</span>
+                        <input name="apiKey" type="password" autocomplete="off" placeholder="请输入 MiMo API Key" required>
+                    </label>
+                    <button class="btn secondary" type="submit">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                        保存 Key
+                    </button>
+                    <p id="aiSettingsStatus" class="form-status">API Key 未配置</p>
+                </form>
+                <form id="aiModelForm" class="panel-form compact-form">
+                    <label class="field">
+                        <span>模型名称</span>
+                        <input name="modelName" value="mimo-v2.5-pro" placeholder="例如：mimo-v2.5-pro" required>
+                    </label>
+                    <button class="btn primary" type="submit">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        测试并添加
+                    </button>
+                </form>
+                <div class="table-card">
+                    <table class="model-table">
+                        <thead>
+                        <tr>
+                            <th>模型</th>
+                            <th>服务商</th>
+                            <th>添加时间</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="aiModelRows"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
     </main>
 </div>

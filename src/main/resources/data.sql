@@ -2,6 +2,9 @@ INSERT IGNORE INTO roles (name, description) VALUES
 ('ROLE_ADMIN', 'System administrator'),
 ('ROLE_READER', 'Library reader');
 
+INSERT IGNORE INTO ai_models (model_name, provider) VALUES
+('mimo-v2.5-pro', 'MiMo');
+
 INSERT IGNORE INTO categories (name, description) VALUES
 ('Java Development', 'Java, Spring Boot and enterprise development books'),
 ('Artificial Intelligence', 'Machine learning and large language model books'),

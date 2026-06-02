@@ -629,6 +629,31 @@ td.actions {
     white-space: pre-wrap;
 }
 
+.ai-model-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.ai-model-panel .panel-form.compact-form {
+    grid-template-columns: minmax(220px, 420px) auto;
+}
+
+.model-table {
+    min-width: 640px;
+}
+
+.form-status {
+    align-self: end;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.form-status.success {
+    color: #0f5f4a;
+}
+
 .dialog-backdrop {
     position: fixed;
     inset: 0;

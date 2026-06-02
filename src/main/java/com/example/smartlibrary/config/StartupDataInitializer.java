@@ -19,8 +19,25 @@ public class StartupDataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        addColumnIfMissing("ai_settings", "active_model_id", "BIGINT NULL");
         createUserIfAbsent("admin", "admin123", "Administrator", "ROLE_ADMIN");
         createUserIfAbsent("reader", "reader123", "Demo Reader", "ROLE_READER");
+    }
+
+    private void addColumnIfMissing(String tableName, String columnName, String definition) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+                """,
+                Integer.class,
+                tableName,
+                columnName);
+        if (count == null || count > 0) {
+            return;
+        }
+        jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
     }
 
     private void createUserIfAbsent(String username, String rawPassword, String displayName, String roleName) {

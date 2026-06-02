@@ -15,7 +15,7 @@ spring:
       encoding: UTF-8
 
 llm:
-  base-url: ${LLM_BASE_URL:https://api.openai.com}
+  base-url: ${LLM_BASE_URL:https://api.mimo-v2.com}
   api-key: ${LLM_API_KEY:}
-  model: ${LLM_MODEL:gpt-4o-mini}
+  model: ${LLM_MODEL:mimo-v2.5-pro}
   chat-path: ${LLM_CHAT_PATH:/v1/chat/completions}
