@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 智能图书借阅管理系统</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="auth-page">
+<main class="auth-shell">
+    <section class="auth-brand" aria-label="系统简介">
+        <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/>
+                <path d="M8 6h8"/>
+                <path d="M8 10h6"/>
+            </svg>
+        </div>
+        <p class="eyebrow">Spring Boot 3 · JavaEE Project</p>
+        <h1>智能图书借阅管理系统</h1>
+        <p class="auth-copy">覆盖角色登录、图书分类、借阅归还和 AI 馆藏推荐，适合作为期末大作业第一版演示。</p>
+        <div class="auth-metrics">
+            <span><strong>6</strong> 张数据表</span>
+            <span><strong>2</strong> 种角色</span>
+            <span><strong>AI</strong> 推荐助手</span>
+        </div>
+    </section>
+
+    <section class="auth-card" aria-label="登录表单">
+        <div class="section-head compact">
+            <p class="eyebrow">Account</p>
+            <h2>登录系统</h2>
+        </div>
+        <form class="form-stack" method="post" action="/login">
+            <label class="field">
+                <span>用户名</span>
+                <input name="username" autocomplete="username" required placeholder="admin 或 reader">
+            </label>
+            <label class="field">
+                <span>密码</span>
+                <input type="password" name="password" autocomplete="current-password" required placeholder="admin123 或 reader123">
+            </label>
+            <button class="btn primary wide" type="submit">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <path d="M10 17l5-5-5-5"/>
+                    <path d="M15 12H3"/>
+                </svg>
+                登录
+            </button>
+        </form>
+        <div class="demo-list" aria-label="演示账号">
+            <div>
+                <span>管理员</span>
+                <code>admin / admin123</code>
+            </div>
+            <div>
+                <span>读者</span>
+                <code>reader / reader123</code>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>
