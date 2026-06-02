@@ -629,6 +629,61 @@ td.actions {
     white-space: pre-wrap;
 }
 
+.dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.46);
+}
+
+.dialog-backdrop[hidden] {
+    display: none;
+}
+
+.dialog-panel {
+    display: grid;
+    gap: 14px;
+    width: min(1080px, 100%);
+    max-height: min(760px, calc(100dvh - 48px));
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.dialog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 0;
+}
+
+.dialog-close {
+    width: 44px;
+    padding: 0;
+}
+
+.dialog-summary {
+    margin-top: 4px;
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.dialog-table {
+    max-height: 560px;
+    overflow: auto;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

@@ -41,6 +41,16 @@ function bindActions() {
     document.querySelector("#askAiBtn").addEventListener("click", askAi);
     document.querySelector("#categoryForm").addEventListener("submit", saveCategory);
     document.querySelector("#bookForm").addEventListener("submit", saveBook);
+    document.querySelector("#categoryBooksDialog").addEventListener("click", (event) => {
+        if (event.target.id === "categoryBooksDialog") {
+            closeCategoryBooksDialog();
+        }
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !document.querySelector("#categoryBooksDialog").hidden) {
+            closeCategoryBooksDialog();
+        }
+    });
 }
 
 async function api(path, options = {}) {
@@ -66,6 +76,7 @@ async function loadMe() {
     document.querySelector("#currentUser").textContent = `${state.me.username} · ${isAdmin ? "管理员" : "读者"}`;
     document.querySelector("#roleLabel").textContent = isAdmin ? "管理员" : "读者";
     applyRoleVisibility();
+    applyRoleLabels();
 }
 
 function applyRoleVisibility() {
@@ -73,6 +84,16 @@ function applyRoleVisibility() {
     document.querySelectorAll(".admin-only").forEach((node) => {
         node.style.display = isAdmin ? "" : "none";
     });
+}
+
+function applyRoleLabels() {
+    const isAdmin = isCurrentAdmin();
+    const bookTitle = isAdmin ? "图书管理" : "图书借阅";
+    const categoryTitle = isAdmin ? "分类管理" : "类别查看";
+    document.querySelector('[data-tab="books"] .nav-label').textContent = bookTitle;
+    document.querySelector('[data-tab="categories"] .nav-label').textContent = categoryTitle;
+    document.querySelector("#booksTitle").textContent = bookTitle;
+    document.querySelector("#categoriesTitle").textContent = categoryTitle;
 }
 
 async function refreshCategories() {
@@ -94,6 +115,7 @@ function renderCategories() {
             <td>${escapeHtml(category.name)}</td>
             <td>${escapeHtml(category.description)}</td>
             <td class="actions">
+                <button class="btn secondary" onclick="viewCategoryBooks(${category.id})" type="button">查看</button>
                 <button class="btn warning admin-only" onclick="editCategory(${category.id})" type="button">编辑</button>
                 <button class="btn danger admin-only" onclick="deleteCategory(${category.id})" type="button">删除</button>
             </td>
@@ -114,6 +136,10 @@ async function refreshBooks() {
     state.books = await api(`/api/books${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ""}`);
     renderBooks();
     updateMetrics();
+}
+
+async function loadAllBooks() {
+    return api("/api/books");
 }
 
 function renderBooks() {
@@ -196,6 +222,41 @@ async function deleteCategory(id) {
         await refreshCategories();
         showMessage("分类已删除");
     });
+}
+
+async function viewCategoryBooks(id) {
+    await run(async () => {
+        const category = state.categories.find((item) => item.id === id);
+        const books = (await loadAllBooks()).filter((book) => book.categoryId === id);
+        openCategoryBooksDialog(category, books);
+    });
+}
+
+function openCategoryBooksDialog(category, books) {
+    const dialog = document.querySelector("#categoryBooksDialog");
+    const title = document.querySelector("#categoryBooksTitle");
+    const summary = document.querySelector("#categoryBooksSummary");
+    const body = document.querySelector("#categoryBookRows");
+
+    title.textContent = `${category?.name ?? "分类"} 下的图书`;
+    summary.textContent = books.length > 0 ? `共 ${books.length} 本图书` : "该分类下暂无图书";
+    body.innerHTML = books.length === 0 ? emptyRow(6, "该分类下暂无图书") : books.map((book) => `
+        <tr>
+            <td><code>${escapeHtml(book.isbn)}</code></td>
+            <td>${escapeHtml(book.title)}</td>
+            <td>${escapeHtml(book.author)}</td>
+            <td>${escapeHtml(book.publisher)}</td>
+            <td><span class="badge ${book.availableCopies > 0 ? "success" : "muted"}">${book.availableCopies}/${book.totalCopies}</span></td>
+            <td>${formatBookStatus(book.status)}</td>
+        </tr>
+    `).join("");
+
+    dialog.hidden = false;
+    dialog.querySelector(".dialog-close").focus();
+}
+
+function closeCategoryBooksDialog() {
+    document.querySelector("#categoryBooksDialog").hidden = true;
 }
 
 async function saveBook(event) {
@@ -325,6 +386,16 @@ function emptyRow(colspan, text) {
 
 function formatTime(value) {
     return value ? value.replace("T", " ").slice(0, 16) : "";
+}
+
+function formatBookStatus(value) {
+    if (value === "ON_SHELF") {
+        return "在架";
+    }
+    if (value === "OFF_SHELF") {
+        return "下架";
+    }
+    return escapeHtml(value);
 }
 
 function isCurrentAdmin() {

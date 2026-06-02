@@ -31,11 +31,11 @@
         <nav class="nav-list">
             <button class="nav-item active" data-tab="books">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>
-                图书管理
+                <span class="nav-label">图书管理</span>
             </button>
             <button class="nav-item" data-tab="categories">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
-                分类管理
+                <span class="nav-label">分类管理</span>
             </button>
             <button class="nav-item" data-tab="borrows">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -91,7 +91,7 @@
             <div class="section-head">
                 <div>
                     <p class="eyebrow">Books</p>
-                    <h2>图书管理</h2>
+                    <h2 id="booksTitle">图书管理</h2>
                 </div>
                 <div class="toolbar">
                     <label class="search-field">
@@ -138,7 +138,7 @@
             <div class="section-head">
                 <div>
                     <p class="eyebrow">Categories</p>
-                    <h2>分类管理</h2>
+                    <h2 id="categoriesTitle">分类管理</h2>
                 </div>
             </div>
             <form id="categoryForm" class="panel-form compact-form admin-only">
@@ -214,6 +214,36 @@
             </div>
         </section>
     </main>
+</div>
+
+<div id="categoryBooksDialog" class="dialog-backdrop" hidden>
+    <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="categoryBooksTitle">
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Category Books</p>
+                <h2 id="categoryBooksTitle">分类下的图书</h2>
+                <p id="categoryBooksSummary" class="dialog-summary"></p>
+            </div>
+            <button class="btn secondary dialog-close" type="button" onclick="closeCategoryBooksDialog()" aria-label="关闭分类图书详情">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="table-card dialog-table">
+            <table>
+                <thead>
+                <tr>
+                    <th>ISBN</th>
+                    <th>书名</th>
+                    <th>作者</th>
+                    <th>出版社</th>
+                    <th>库存</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody id="categoryBookRows"></tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
 <script src="/js/app.js"></script>
