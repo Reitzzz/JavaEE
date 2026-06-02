@@ -249,12 +249,42 @@ textarea::placeholder {
     height: 54px;
     border-radius: 8px;
     color: #ffffff;
-    background: var(--color-accent);
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 38%),
+        linear-gradient(135deg, #29b889, #178768);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 22px rgba(0, 0, 0, 0.18);
 }
 
 .brand-mark.small {
     width: 42px;
     height: 42px;
+}
+
+.brand-mark .brand-icon {
+    width: 34px;
+    height: 34px;
+    color: #ffffff;
+    stroke-width: 1.9;
+}
+
+.brand-mark.small .brand-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.brand-icon-book {
+    fill: rgba(255, 255, 255, 0.13);
+    stroke: rgba(255, 255, 255, 0.94);
+}
+
+.brand-icon-page,
+.brand-icon-node {
+    stroke: rgba(255, 255, 255, 0.82);
+}
+
+.brand-icon-dot {
+    fill: #ffffff;
+    stroke: none;
 }
 
 .auth-brand .eyebrow {
