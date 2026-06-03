@@ -5,9 +5,12 @@ import com.example.smartlibrary.dto.AiChatRequest;
 import com.example.smartlibrary.dto.AiSettingsRequest;
 import com.example.smartlibrary.exception.BusinessException;
 import com.example.smartlibrary.model.AiModel;
-import com.example.smartlibrary.repository.AiModelRepository;
-import com.example.smartlibrary.repository.AiSettingsRepository;
+import com.example.smartlibrary.model.AiSettings;
+import com.example.smartlibrary.mapper.AiModelMapper;
+import com.example.smartlibrary.mapper.AiSettingsMapper;
 import com.example.smartlibrary.service.LlmService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,16 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiController {
 
     private final LlmService llmService;
-    private final AiModelRepository aiModelRepository;
-    private final AiSettingsRepository aiSettingsRepository;
+    private final AiModelMapper aiModelMapper;
+    private final AiSettingsMapper aiSettingsMapper;
 
     public AiController(
             LlmService llmService,
-            AiModelRepository aiModelRepository,
-            AiSettingsRepository aiSettingsRepository) {
+            AiModelMapper aiModelMapper,
+            AiSettingsMapper aiSettingsMapper) {
         this.llmService = llmService;
-        this.aiModelRepository = aiModelRepository;
-        this.aiSettingsRepository = aiSettingsRepository;
+        this.aiModelMapper = aiModelMapper;
+        this.aiSettingsMapper = aiSettingsMapper;
     }
 
     @PostMapping("/chat")
@@ -43,35 +46,61 @@ public class AiController {
 
     @GetMapping("/models")
     public List<AiModel> models() {
-        return aiModelRepository.findAll();
+        QueryWrapper<AiModel> query = new QueryWrapper<>();
+        query.orderByDesc("id");
+        return aiModelMapper.selectList(query);
     }
 
     @PostMapping("/models")
     public AiModel addModel(@RequestBody AiModelRequest request) {
         String modelName = request == null ? null : request.modelName();
         llmService.testModel(modelName);
-        return aiModelRepository.create(modelName.trim());
+        AiModel model = new AiModel();
+        model.setModelName(modelName.trim());
+        model.setProvider("MiMo");
+        model.setCreatedAt(LocalDateTime.now());
+        aiModelMapper.insert(model);
+        return aiModelMapper.selectById(model.getId());
     }
 
     @DeleteMapping("/models/{id}")
     public void deleteModel(@PathVariable Long id) {
-        aiModelRepository.delete(id);
+        int rows = aiModelMapper.deleteById(id);
+        if (rows == 0) {
+            throw new BusinessException("模型不存在");
+        }
     }
 
     @PostMapping("/models/{id}/activate")
     public Map<String, Object> activateModel(@PathVariable Long id) {
-        aiModelRepository.findById(id).orElseThrow(() -> new BusinessException("模型不存在"));
-        aiSettingsRepository.saveActiveModel(id);
+        AiModel model = aiModelMapper.selectById(id);
+        if (model == null) {
+            throw new BusinessException("模型不存在");
+        }
+        AiSettings settings = aiSettingsMapper.selectById(1L);
+        if (settings == null) {
+            settings = new AiSettings("", id);
+            aiSettingsMapper.insert(settings);
+        } else {
+            settings.setActiveModelId(id);
+            aiSettingsMapper.updateById(settings);
+        }
         return Map.of("success", true, "message", "模型已切换");
     }
 
     @GetMapping("/settings")
     public Map<String, Object> settings() {
-        var settings = aiSettingsRepository.find();
-        String apiKey = settings.map(value -> value.apiKey()).orElse("");
-        Long activeModelId = settings
-                .map(value -> value.activeModelId())
-                .orElseGet(() -> aiModelRepository.findFirst().map(model -> model.id()).orElse(null));
+        AiSettings settings = aiSettingsMapper.selectById(1L);
+        String apiKey = settings != null ? settings.getApiKey() : "";
+        Long activeModelId = settings != null ? settings.getActiveModelId() : null;
+        if (activeModelId == null) {
+            QueryWrapper<AiModel> query = new QueryWrapper<>();
+            query.orderByDesc("id").last("LIMIT 1");
+            AiModel firstModel = aiModelMapper.selectOne(query);
+            if (firstModel != null) {
+                activeModelId = firstModel.getId();
+            }
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("apiKeyConfigured", apiKey != null && !apiKey.isBlank());
         result.put("apiKeyMask", maskApiKey(apiKey));
@@ -84,7 +113,14 @@ public class AiController {
         if (request == null || request.apiKey() == null || request.apiKey().isBlank()) {
             throw new BusinessException("API Key 不能为空");
         }
-        aiSettingsRepository.saveApiKey(request.apiKey());
+        AiSettings settings = aiSettingsMapper.selectById(1L);
+        if (settings == null) {
+            settings = new AiSettings(request.apiKey().trim(), null);
+            aiSettingsMapper.insert(settings);
+        } else {
+            settings.setApiKey(request.apiKey().trim());
+            aiSettingsMapper.updateById(settings);
+        }
         return Map.of("success", true, "message", "API Key 已保存");
     }
 

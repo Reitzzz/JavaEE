@@ -1,17 +1,36 @@
 package com.example.smartlibrary.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
-public record BorrowRecord(
-        Long id,
-        Long userId,
-        String username,
-        String displayName,
-        Long bookId,
-        String bookTitle,
-        LocalDateTime borrowedAt,
-        LocalDateTime dueAt,
-        LocalDateTime returnedAt,
-        String status
-) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("borrow_records")
+public class BorrowRecord {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private Long userId;
+    
+    @TableField(exist = false)
+    private String username;
+    
+    @TableField(exist = false)
+    private String displayName;
+    
+    private Long bookId;
+    
+    @TableField(exist = false)
+    private String bookTitle;
+    
+    private LocalDateTime borrowedAt;
+    private LocalDateTime dueAt;
+    private LocalDateTime returnedAt;
+    private String status;
 }

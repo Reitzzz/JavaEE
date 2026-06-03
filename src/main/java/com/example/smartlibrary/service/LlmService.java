@@ -1,11 +1,13 @@
 package com.example.smartlibrary.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.smartlibrary.config.LlmProperties;
 import com.example.smartlibrary.exception.BusinessException;
+import com.example.smartlibrary.mapper.AiModelMapper;
+import com.example.smartlibrary.mapper.AiSettingsMapper;
+import com.example.smartlibrary.model.AiModel;
+import com.example.smartlibrary.model.AiSettings;
 import com.example.smartlibrary.model.Book;
-import com.example.smartlibrary.repository.AiModelRepository;
-import com.example.smartlibrary.repository.AiSettingsRepository;
-import com.example.smartlibrary.repository.BookRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -22,21 +24,21 @@ public class LlmService {
     private static final String MIMO_TOKEN_PLAN_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1";
 
     private final LlmProperties properties;
-    private final BookRepository bookRepository;
-    private final AiModelRepository aiModelRepository;
-    private final AiSettingsRepository aiSettingsRepository;
+    private final BookService bookService;
+    private final AiModelMapper aiModelMapper;
+    private final AiSettingsMapper aiSettingsMapper;
     private final ObjectMapper objectMapper;
 
     public LlmService(
             LlmProperties properties,
-            BookRepository bookRepository,
-            AiModelRepository aiModelRepository,
-            AiSettingsRepository aiSettingsRepository,
+            BookService bookService,
+            AiModelMapper aiModelMapper,
+            AiSettingsMapper aiSettingsMapper,
             ObjectMapper objectMapper) {
         this.properties = properties;
-        this.bookRepository = bookRepository;
-        this.aiModelRepository = aiModelRepository;
-        this.aiSettingsRepository = aiSettingsRepository;
+        this.bookService = bookService;
+        this.aiModelMapper = aiModelMapper;
+        this.aiSettingsMapper = aiSettingsMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -44,7 +46,7 @@ public class LlmService {
         if (question == null || question.isBlank()) {
             return "请输入问题，例如：请根据 JavaEE 大作业推荐两本适合学习的书。";
         }
-        List<Book> books = bookRepository.findAll(null);
+        List<Book> books = bookService.findAll(null);
         if (!hasApiKey()) {
             return fallbackAnswer(question, books);
         }
@@ -112,9 +114,17 @@ public class LlmService {
     }
 
     private String currentModelName() {
-        return aiSettingsRepository.findActiveModelName()
-                .or(() -> aiModelRepository.findFirst().map(model -> model.modelName()))
-                .orElseGet(properties::getModel);
+        String activeModelName = aiSettingsMapper.findActiveModelName();
+        if (activeModelName != null && !activeModelName.isBlank()) {
+            return activeModelName;
+        }
+        QueryWrapper<AiModel> query = new QueryWrapper<>();
+        query.orderByDesc("id").last("LIMIT 1");
+        AiModel firstModel = aiModelMapper.selectOne(query);
+        if (firstModel != null) {
+            return firstModel.getModelName();
+        }
+        return properties.getModel();
     }
 
     private boolean hasApiKey() {
@@ -122,10 +132,11 @@ public class LlmService {
     }
 
     private String currentApiKey() {
-        return aiSettingsRepository.find()
-                .filter(settings -> settings.hasApiKey())
-                .map(settings -> settings.apiKey())
-                .orElseGet(properties::getApiKey);
+        AiSettings settings = aiSettingsMapper.selectById(1L);
+        if (settings != null && settings.hasApiKey()) {
+            return settings.getApiKey();
+        }
+        return properties.getApiKey();
     }
 
     private String currentBaseUrl() {
@@ -174,15 +185,15 @@ public class LlmService {
         builder.append("你的问题是：").append(question.trim()).append("。");
         builder.append("可优先查看：");
         books.stream()
-                .filter(book -> book.availableCopies() > 0)
+                .filter(book -> book.getAvailableCopies() > 0)
                 .limit(3)
                 .forEach(book -> builder
                         .append("《")
-                        .append(book.title())
+                        .append(book.getTitle())
                         .append("》（")
-                        .append(book.categoryName())
+                        .append(book.getCategoryName())
                         .append("，可借 ")
-                        .append(book.availableCopies())
+                        .append(book.getAvailableCopies())
                         .append(" 本）；"));
         return builder.toString();
     }
@@ -191,14 +202,15 @@ public class LlmService {
         StringBuilder builder = new StringBuilder();
         books.stream().limit(20).forEach(book -> builder
                 .append("书名=")
-                .append(book.title())
+                .append(book.getTitle())
                 .append(", 作者=")
-                .append(book.author())
+                .append(book.getAuthor())
                 .append(", 分类=")
-                .append(book.categoryName())
+                .append(book.getCategoryName())
                 .append(", 可借=")
-                .append(book.availableCopies())
+                .append(book.getAvailableCopies())
                 .append("; "));
         return builder.toString();
     }
 }
+

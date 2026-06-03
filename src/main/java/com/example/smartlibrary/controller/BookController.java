@@ -2,7 +2,7 @@ package com.example.smartlibrary.controller;
 
 import com.example.smartlibrary.dto.BookRequest;
 import com.example.smartlibrary.model.Book;
-import com.example.smartlibrary.repository.BookRepository;
+import com.example.smartlibrary.service.BookService;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,29 +18,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/books")
 public class BookController {
 
-    private final BookRepository bookRepository;
+    private final BookService bookService;
 
-    public BookController(BookRepository bookRepository) {
-        this.bookRepository = bookRepository;
+    public BookController(BookService bookService) {
+        this.bookService = bookService;
     }
 
     @GetMapping
     public List<Book> list(@RequestParam(required = false) String keyword) {
-        return bookRepository.findAll(keyword);
+        return bookService.findAll(keyword);
     }
 
     @PostMapping
     public Book create(@RequestBody BookRequest request) {
-        return bookRepository.create(request);
+        return bookService.create(request);
     }
 
     @PutMapping("/{id}")
     public Book update(@PathVariable Long id, @RequestBody BookRequest request) {
-        return bookRepository.update(id, request);
+        return bookService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        bookRepository.delete(id);
+        bookService.delete(id);
     }
 }
