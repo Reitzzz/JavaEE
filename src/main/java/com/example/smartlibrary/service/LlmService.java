@@ -12,11 +12,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 public class LlmService {
@@ -42,27 +46,92 @@ public class LlmService {
         this.objectMapper = objectMapper;
     }
 
-    public String ask(String question) {
+    public SseEmitter askStream(String question) {
+        SseEmitter emitter = new SseEmitter(180000L); // 3 minutes timeout
         if (question == null || question.isBlank()) {
-            return "请输入问题，例如：请根据 JavaEE 大作业推荐两本适合学习的书。";
+            sendAndComplete(emitter, "请输入问题，例如：请根据 JavaEE 大作业推荐两本适合学习的书。");
+            return emitter;
         }
         List<Book> books = bookService.findAll(null);
         if (!hasApiKey()) {
-            return fallbackAnswer(question, books);
+            sendAndComplete(emitter, fallbackAnswer(question, books));
+            return emitter;
         }
-        try {
-            JsonNode response = requestChat(
-                    currentModelName(),
-                    "你是智能图书管理系统的图书推荐助手。请基于馆藏数据回答，中文输出，简洁实用。",
-                    "馆藏数据：" + summarizeBooks(books) + "\n用户问题：" + question.trim());
-            JsonNode content = chatContent(response);
-            if (content.isTextual() && !content.asText().isBlank()) {
-                return content.asText();
+
+        Thread.startVirtualThread(() -> {
+            try {
+                requestChatStream(
+                        currentModelName(),
+                        "你是智能图书管理系统的图书推荐助手。请基于馆藏数据回答，中文输出，简洁实用。",
+                        "馆藏数据：" + summarizeBooks(books) + "\n用户问题：" + question.trim(),
+                        emitter);
+            } catch (Exception exception) {
+                try {
+                    emitter.send("大模型接口调用失败（" + failureReason(exception) + "），已切换本地推荐：\n\n" + fallbackAnswer(question, books));
+                    emitter.complete();
+                } catch (Exception ignored) {
+                }
             }
-            return "大模型已响应，但没有返回有效文本。";
-        } catch (Exception exception) {
-            return "大模型接口调用失败（" + failureReason(exception) + "），已切换本地推荐："
-                    + fallbackAnswer(question, books);
+        });
+
+        return emitter;
+    }
+
+    private void requestChatStream(String modelName, String systemPrompt, String userPrompt, SseEmitter emitter) {
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", modelName);
+        body.put("stream", true);
+        ArrayNode messages = body.putArray("messages");
+        messages.addObject().put("role", "system").put("content", systemPrompt);
+        messages.addObject().put("role", "user").put("content", userPrompt);
+
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(10))
+                    .build();
+            
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(currentBaseUrl() + currentChatPath()))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + currentApiKey())
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                    .build();
+
+            java.net.http.HttpResponse<java.io.InputStream> response = client.send(
+                    request, java.net.http.HttpResponse.BodyHandlers.ofInputStream());
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                String errorBody = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
+                throw new BusinessException("HTTP " + response.statusCode() + ": " + errorBody);
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
+                        String json = line.substring(6);
+                        try {
+                            JsonNode node = objectMapper.readTree(json);
+                            JsonNode delta = node.path("choices").path(0).path("delta").path("content");
+                            if (delta.isTextual() && !delta.asText().isEmpty()) {
+                                emitter.send(delta.asText());
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+            emitter.complete();
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+    }
+
+    private void sendAndComplete(SseEmitter emitter, String text) {
+        try {
+            emitter.send(text);
+            emitter.complete();
+        } catch (Exception ignored) {
         }
     }
 
@@ -72,11 +141,23 @@ public class LlmService {
             throw new BusinessException("请先在管理员页面配置 API Key 后再测试模型");
         }
         try {
-            JsonNode response = requestChat(
-                    normalized,
-                    "你是模型连通性测试助手。",
-                    "请只回复：测试成功");
-            JsonNode content = chatContent(response);
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("model", normalized);
+            ArrayNode messages = body.putArray("messages");
+            messages.addObject().put("role", "system").put("content", "你是模型连通性测试助手。");
+            messages.addObject().put("role", "user").put("content", "请只回复：测试成功");
+
+            JsonNode response = RestClient.builder()
+                    .baseUrl(currentBaseUrl())
+                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + currentApiKey())
+                    .build()
+                    .post()
+                    .uri(currentChatPath())
+                    .body(body)
+                    .retrieve()
+                    .body(JsonNode.class);
+
+            JsonNode content = response.path("choices").path(0).path("message").path("content");
             if (!content.isTextual() || content.asText().isBlank()) {
                 throw new BusinessException("模型测试失败：接口未返回有效文本");
             }
@@ -85,32 +166,6 @@ public class LlmService {
         } catch (Exception exception) {
             throw new BusinessException("模型测试失败，请检查模型名称、API Key 或接口地址");
         }
-    }
-
-    private JsonNode requestChat(String modelName, String systemPrompt, String userPrompt) {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("model", modelName);
-        ArrayNode messages = body.putArray("messages");
-        messages.addObject()
-                .put("role", "system")
-                .put("content", systemPrompt);
-        messages.addObject()
-                .put("role", "user")
-                .put("content", userPrompt);
-
-        return RestClient.builder()
-                .baseUrl(currentBaseUrl())
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + currentApiKey())
-                .build()
-                .post()
-                .uri(currentChatPath())
-                .body(body)
-                .retrieve()
-                .body(JsonNode.class);
-    }
-
-    private JsonNode chatContent(JsonNode response) {
-        return response.path("choices").path(0).path("message").path("content");
     }
 
     private String currentModelName() {
@@ -181,20 +236,20 @@ public class LlmService {
 
     private String fallbackAnswer(String question, List<Book> books) {
         StringBuilder builder = new StringBuilder();
-        builder.append("当前未配置 API Key，系统使用本地规则推荐。");
-        builder.append("你的问题是：").append(question.trim()).append("。");
-        builder.append("可优先查看：");
+        builder.append("当前未配置 API Key，系统使用本地规则推荐。\n\n");
+        builder.append("你的问题是：").append(question.trim()).append("。\n");
+        builder.append("可优先查看：\n");
         books.stream()
                 .filter(book -> book.getAvailableCopies() > 0)
                 .limit(3)
                 .forEach(book -> builder
-                        .append("《")
+                        .append("- 《")
                         .append(book.getTitle())
                         .append("》（")
                         .append(book.getCategoryName())
                         .append("，可借 ")
                         .append(book.getAvailableCopies())
-                        .append(" 本）；"));
+                        .append(" 本）\n"));
         return builder.toString();
     }
 
@@ -213,4 +268,5 @@ public class LlmService {
         return builder.toString();
     }
 }
+
 

@@ -39,9 +39,13 @@ public class AiController {
         this.aiSettingsMapper = aiSettingsMapper;
     }
 
-    @PostMapping("/chat")
-    public Map<String, Object> chat(@RequestBody AiChatRequest request) {
-        return Map.of("answer", llmService.ask(request.question()));
+    @PostMapping(value = "/chat", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.http.ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> chat(@RequestBody AiChatRequest request) {
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setCacheControl(org.springframework.http.CacheControl.noCache());
+        headers.set("X-Accel-Buffering", "no"); // 禁用 Nginx 等反向代理的缓存
+        headers.set("Connection", "keep-alive");
+        return org.springframework.http.ResponseEntity.ok().headers(headers).body(llmService.askStream(request.question()));
     }
 
     @GetMapping("/models")

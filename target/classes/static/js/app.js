@@ -340,12 +340,46 @@ async function returnBook(id) {
 async function askAi() {
     await withButton(document.querySelector("#askAiBtn"), "生成中", async () => {
         const question = document.querySelector("#aiQuestion").value;
-        document.querySelector("#aiAnswer").textContent = "正在结合馆藏数据生成推荐...";
-        const result = await api("/api/ai/chat", {
-            method: "POST",
-            body: JSON.stringify({ question })
-        });
-        document.querySelector("#aiAnswer").textContent = result.answer;
+        const answerNode = document.querySelector("#aiAnswer");
+        answerNode.textContent = "正在结合馆藏数据生成推荐...";
+        
+        try {
+            const response = await fetch("/api/ai/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question })
+            });
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+            if (!response.ok) {
+                throw new Error("请求失败，HTTP " + response.status);
+            }
+            answerNode.innerHTML = "";
+            let fullText = "";
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop();
+                for (let part of parts) {
+                    let text = part.split("\n").map(l => l.startsWith("data:") ? l.substring(5) : l).join("\n");
+                    fullText += text;
+                    if (typeof marked !== 'undefined') {
+                        answerNode.innerHTML = marked.parse(fullText);
+                    } else {
+                        answerNode.textContent = fullText;
+                    }
+                }
+            }
+        } catch (error) {
+            answerNode.textContent += "\n大模型生成异常：" + error.message;
+        }
     });
 }
 
