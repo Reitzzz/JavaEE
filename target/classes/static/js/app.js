@@ -4,7 +4,9 @@ const state = {
     books: [],
     aiModels: [],
     aiSettings: null,
-    loadingButton: null
+    loadingButton: null,
+    activeDialog: null,
+    lastFocusedElement: null
 };
 
 const message = document.querySelector("#message");
@@ -49,13 +51,33 @@ function bindActions() {
     document.querySelector("#bookForm").addEventListener("submit", saveBook);
     document.querySelector("#aiSettingsForm").addEventListener("submit", saveAiSettings);
     document.querySelector("#aiModelForm").addEventListener("submit", saveAiModel);
+    document.querySelector("#formDialogClose").addEventListener("click", closeFormDialog);
+    document.querySelector("#confirmDialogClose").addEventListener("click", closeConfirmDialog);
+    document.querySelector("#confirmDialogCancel").addEventListener("click", closeConfirmDialog);
     document.querySelector("#categoryBooksDialog").addEventListener("click", (event) => {
         if (event.target.id === "categoryBooksDialog") {
             closeCategoryBooksDialog();
         }
     });
+    document.querySelector("#formDialog").addEventListener("click", (event) => {
+        if (event.target.id === "formDialog") {
+            closeFormDialog();
+        }
+    });
+    document.querySelector("#confirmDialog").addEventListener("click", (event) => {
+        if (event.target.id === "confirmDialog") {
+            closeConfirmDialog();
+        }
+    });
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !document.querySelector("#categoryBooksDialog").hidden) {
+        if (event.key !== "Escape") {
+            return;
+        }
+        if (!document.querySelector("#formDialog").hidden) {
+            closeFormDialog();
+        } else if (!document.querySelector("#confirmDialog").hidden) {
+            closeConfirmDialog();
+        } else if (!document.querySelector("#categoryBooksDialog").hidden) {
             closeCategoryBooksDialog();
         }
     });
@@ -119,9 +141,9 @@ function renderCategories() {
     }
     rows.innerHTML = state.categories.map((category) => `
         <tr>
-            <td>${category.id}</td>
-            <td>${escapeHtml(category.name)}</td>
-            <td>${escapeHtml(category.description)}</td>
+            <td data-label="编号">${category.id}</td>
+            <td data-label="名称">${escapeHtml(category.name)}</td>
+            <td data-label="描述">${escapeHtml(category.description)}</td>
             <td class="actions">
                 <button class="btn secondary" onclick="viewCategoryBooks(${category.id})" type="button">查看</button>
                 <button class="btn warning admin-only" onclick="editCategory(${category.id})" type="button">编辑</button>
@@ -159,11 +181,11 @@ function renderBooks() {
     }
     rows.innerHTML = state.books.map((book) => `
         <tr>
-            <td><code>${escapeHtml(book.isbn)}</code></td>
-            <td>${escapeHtml(book.title)}</td>
-            <td>${escapeHtml(book.author)}</td>
-            <td>${escapeHtml(book.categoryName)}</td>
-            <td><span class="badge ${book.availableCopies > 0 ? "success" : "muted"}">${book.availableCopies}/${book.totalCopies}</span></td>
+            <td data-label="ISBN"><code>${escapeHtml(book.isbn)}</code></td>
+            <td data-label="书名">${escapeHtml(book.title)}</td>
+            <td data-label="作者">${escapeHtml(book.author)}</td>
+            <td data-label="分类">${escapeHtml(book.categoryName)}</td>
+            <td data-label="库存"><span class="badge ${book.availableCopies > 0 ? "success" : "muted"}">${book.availableCopies}/${book.totalCopies}</span></td>
             <td class="actions">
                 <button class="btn secondary" onclick="borrowBook(${book.id})" type="button" ${book.availableCopies <= 0 ? "disabled" : ""}>借阅</button>
                 ${isAdmin ? `<button class="btn warning" onclick="editBook(${book.id})" type="button">编辑</button><button class="btn danger" onclick="deleteBook(${book.id})" type="button">删除</button>` : ""}
@@ -181,11 +203,11 @@ async function refreshBorrows(all) {
     }
     target.innerHTML = rows.map((record) => `
         <tr>
-            <td>${escapeHtml(record.displayName)}</td>
-            <td>${escapeHtml(record.bookTitle)}</td>
-            <td>${formatTime(record.borrowedAt)}</td>
-            <td>${formatTime(record.dueAt)}</td>
-            <td><span class="badge ${record.status === "BORROWED" ? "success" : "muted"}">${record.status === "BORROWED" ? "借阅中" : "已归还"}</span></td>
+            <td data-label="读者">${escapeHtml(record.displayName)}</td>
+            <td data-label="图书">${escapeHtml(record.bookTitle)}</td>
+            <td data-label="借出时间">${formatTime(record.borrowedAt)}</td>
+            <td data-label="应还时间">${formatTime(record.dueAt)}</td>
+            <td data-label="状态"><span class="badge ${record.status === "BORROWED" ? "success" : "muted"}">${record.status === "BORROWED" ? "借阅中" : "已归还"}</span></td>
             <td class="actions">
                 ${record.status === "BORROWED" ? `<button class="btn secondary" onclick="returnBook(${record.id})" type="button">归还</button>` : ""}
             </td>
@@ -209,26 +231,38 @@ async function saveCategory(event) {
 
 async function editCategory(id) {
     const category = state.categories.find((item) => item.id === id);
-    const name = prompt("分类名称", category.name);
-    if (!name) return;
-    const description = prompt("分类描述", category.description);
-    if (!description) return;
-    await run(async () => {
-        await api(`/api/categories/${id}`, {
-            method: "PUT",
-            body: JSON.stringify({ name, description })
-        });
-        await refreshCategories();
-        showMessage("分类已更新");
+    if (!category) return;
+    openFormDialog({
+        eyebrow: "Category",
+        title: "编辑分类",
+        summary: "修改分类名称和描述后，相关图书会继续归属到该分类。",
+        submitText: "保存分类",
+        fields: [
+            { name: "name", label: "分类名称", value: category.name, required: true },
+            { name: "description", label: "分类描述", value: category.description, required: true, full: true }
+        ],
+        onSubmit: async (payload) => {
+            await api(`/api/categories/${id}`, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+            await refreshCategories();
+            showMessage("分类已更新");
+        }
     });
 }
 
 async function deleteCategory(id) {
-    if (!confirm("确认删除该分类？如果分类下仍有图书，系统会阻止删除。")) return;
-    await run(async () => {
-        await api(`/api/categories/${id}`, { method: "DELETE" });
-        await refreshCategories();
-        showMessage("分类已删除");
+    const category = state.categories.find((item) => item.id === id);
+    openConfirmDialog({
+        title: "删除分类",
+        message: `确认删除“${category?.name ?? "该分类"}”？如果分类下仍有图书，系统会阻止删除。`,
+        confirmText: "删除分类",
+        onConfirm: async () => {
+            await api(`/api/categories/${id}`, { method: "DELETE" });
+            await refreshCategories();
+            showMessage("分类已删除");
+        }
     });
 }
 
@@ -250,12 +284,12 @@ function openCategoryBooksDialog(category, books) {
     summary.textContent = books.length > 0 ? `共 ${books.length} 本图书` : "该分类下暂无图书";
     body.innerHTML = books.length === 0 ? emptyRow(6, "该分类下暂无图书") : books.map((book) => `
         <tr>
-            <td><code>${escapeHtml(book.isbn)}</code></td>
-            <td>${escapeHtml(book.title)}</td>
-            <td>${escapeHtml(book.author)}</td>
-            <td>${escapeHtml(book.publisher)}</td>
-            <td><span class="badge ${book.availableCopies > 0 ? "success" : "muted"}">${book.availableCopies}/${book.totalCopies}</span></td>
-            <td>${formatBookStatus(book.status)}</td>
+            <td data-label="ISBN"><code>${escapeHtml(book.isbn)}</code></td>
+            <td data-label="书名">${escapeHtml(book.title)}</td>
+            <td data-label="作者">${escapeHtml(book.author)}</td>
+            <td data-label="出版社">${escapeHtml(book.publisher)}</td>
+            <td data-label="库存"><span class="badge ${book.availableCopies > 0 ? "success" : "muted"}">${book.availableCopies}/${book.totalCopies}</span></td>
+            <td data-label="状态">${formatBookStatus(book.status)}</td>
         </tr>
     `).join("");
 
@@ -284,35 +318,54 @@ async function saveBook(event) {
 
 async function editBook(id) {
     const book = state.books.find((item) => item.id === id);
-    const title = prompt("书名", book.title);
-    if (!title) return;
-    const totalCopies = Number(prompt("馆藏总数", book.totalCopies));
-    if (Number.isNaN(totalCopies)) return;
-    await run(async () => {
-        await api(`/api/books/${id}`, {
-            method: "PUT",
-            body: JSON.stringify({
-                isbn: book.isbn,
-                title,
-                author: book.author,
-                publisher: book.publisher,
-                totalCopies,
-                availableCopies: Math.min(book.availableCopies, totalCopies),
-                categoryId: book.categoryId,
-                status: book.status
-            })
-        });
-        await refreshBooks();
-        showMessage("图书已更新");
+    if (!book) return;
+    openFormDialog({
+        eyebrow: "Book",
+        title: "编辑图书",
+        summary: "可同步调整基础信息和库存，系统会保留已有借阅记录。",
+        submitText: "保存图书",
+        fields: [
+            { name: "isbn", label: "ISBN", value: book.isbn, required: true },
+            { name: "title", label: "书名", value: book.title, required: true },
+            { name: "author", label: "作者", value: book.author, required: true },
+            { name: "publisher", label: "出版社", value: book.publisher, required: true },
+            { name: "totalCopies", label: "馆藏", type: "number", min: 0, value: book.totalCopies, required: true },
+            { name: "availableCopies", label: "可借", type: "number", min: 0, value: book.availableCopies },
+            { name: "categoryId", label: "分类", type: "select", value: book.categoryId, required: true, options: state.categories.map((category) => ({ value: category.id, label: category.name })) }
+        ],
+        onSubmit: async (payload) => {
+            const totalCopies = Number(payload.totalCopies);
+            const availableCopies = payload.availableCopies === "" ? Math.min(book.availableCopies, totalCopies) : Number(payload.availableCopies);
+            await api(`/api/books/${id}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    isbn: payload.isbn,
+                    title: payload.title,
+                    author: payload.author,
+                    publisher: payload.publisher,
+                    totalCopies,
+                    availableCopies: Math.min(availableCopies, totalCopies),
+                    categoryId: Number(payload.categoryId),
+                    status: book.status
+                })
+            });
+            await refreshBooks();
+            showMessage("图书已更新");
+        }
     });
 }
 
 async function deleteBook(id) {
-    if (!confirm("确认删除该图书？已有借阅记录时系统会阻止删除。")) return;
-    await run(async () => {
-        await api(`/api/books/${id}`, { method: "DELETE" });
-        await refreshBooks();
-        showMessage("图书已删除");
+    const book = state.books.find((item) => item.id === id);
+    openConfirmDialog({
+        title: "删除图书",
+        message: `确认删除《${book?.title ?? "该图书"}》？已有借阅记录时系统会阻止删除。`,
+        confirmText: "删除图书",
+        onConfirm: async () => {
+            await api(`/api/books/${id}`, { method: "DELETE" });
+            await refreshBooks();
+            showMessage("图书已删除");
+        }
     });
 }
 
@@ -342,6 +395,7 @@ async function askAi() {
         const question = document.querySelector("#aiQuestion").value;
         const answerNode = document.querySelector("#aiAnswer");
         answerNode.textContent = "正在结合馆藏数据生成推荐...";
+        answerNode.classList.add("loading");
         
         try {
             const response = await fetch("/api/ai/chat", {
@@ -357,6 +411,7 @@ async function askAi() {
                 throw new Error("请求失败，HTTP " + response.status);
             }
             answerNode.innerHTML = "";
+            answerNode.classList.remove("loading");
             let fullText = "";
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -371,13 +426,14 @@ async function askAi() {
                     let text = part.split("\n").map(l => l.startsWith("data:") ? l.substring(5) : l).join("\n");
                     fullText += text;
                     if (typeof marked !== 'undefined') {
-                        answerNode.innerHTML = marked.parse(fullText);
+                        answerNode.innerHTML = sanitizeHtml(marked.parse(fullText));
                     } else {
                         answerNode.textContent = fullText;
                     }
                 }
             }
         } catch (error) {
+            answerNode.classList.remove("loading");
             answerNode.textContent += "\n大模型生成异常：" + error.message;
         }
     });
@@ -433,12 +489,12 @@ function renderAiModels() {
     }
     rows.innerHTML = state.aiModels.map((model) => `
         <tr>
-            <td>
+            <td data-label="模型">
                 <code>${escapeHtml(model.modelName)}</code>
                 ${isActiveAiModel(model.id) ? `<span class="badge success">当前使用</span>` : ""}
             </td>
-            <td>${escapeHtml(model.provider)}</td>
-            <td>${formatTime(model.createdAt)}</td>
+            <td data-label="服务商">${escapeHtml(model.provider)}</td>
+            <td data-label="添加时间">${formatTime(model.createdAt)}</td>
             <td class="actions">
                 <button class="btn secondary" onclick="activateAiModel(${model.id})" type="button" ${isActiveAiModel(model.id) ? "disabled" : ""}>设为使用</button>
                 <button class="btn danger" onclick="deleteAiModel(${model.id})" type="button">删除</button>
@@ -474,13 +530,163 @@ async function activateAiModel(id) {
 }
 
 async function deleteAiModel(id) {
-    if (!confirm("确认删除该模型？删除后系统会使用列表中的其他模型或默认配置。")) return;
-    await run(async () => {
-        await api(`/api/ai/models/${id}`, { method: "DELETE" });
-        await refreshAiSettings();
-        await refreshAiModels();
-        showMessage("模型已删除");
+    const model = state.aiModels.find((item) => item.id === id);
+    openConfirmDialog({
+        title: "删除模型",
+        message: `确认删除模型“${model?.modelName ?? "该模型"}”？删除后系统会使用列表中的其他模型或默认配置。`,
+        confirmText: "删除模型",
+        onConfirm: async () => {
+            await api(`/api/ai/models/${id}`, { method: "DELETE" });
+            await refreshAiSettings();
+            await refreshAiModels();
+            showMessage("模型已删除");
+        }
     });
+}
+
+function openFormDialog(config) {
+    const dialog = document.querySelector("#formDialog");
+    const form = document.querySelector("#formDialogForm");
+    const title = document.querySelector("#formDialogTitle");
+    const eyebrow = document.querySelector("#formDialogEyebrow");
+    const summary = document.querySelector("#formDialogSummary");
+
+    state.lastFocusedElement = document.activeElement;
+    state.activeDialog = dialog;
+    eyebrow.textContent = config.eyebrow;
+    title.textContent = config.title;
+    summary.textContent = config.summary || "";
+    form.innerHTML = [
+        ...config.fields.map(renderDialogField),
+        `<div class="dialog-actions field full">
+            <button class="btn secondary" type="button" data-dialog-cancel>取消</button>
+            <button class="btn primary" type="submit">${escapeHtml(config.submitText || "保存")}</button>
+        </div>`
+    ].join("");
+
+    form.onsubmit = async (event) => {
+        event.preventDefault();
+        clearDialogError(form);
+        const payload = Object.fromEntries(new FormData(form).entries());
+        if (!validateDialogPayload(form, config.fields, payload)) {
+            return;
+        }
+        await withButton(event.submitter, "保存中", async () => {
+            await config.onSubmit(payload);
+            closeFormDialog();
+        });
+    };
+    form.querySelector("[data-dialog-cancel]").addEventListener("click", closeFormDialog);
+    dialog.hidden = false;
+    form.querySelector("input, select, textarea, button")?.focus();
+}
+
+function closeFormDialog() {
+    const dialog = document.querySelector("#formDialog");
+    dialog.hidden = true;
+    document.querySelector("#formDialogForm").onsubmit = null;
+    restoreDialogFocus(dialog);
+}
+
+function renderDialogField(field) {
+    const fullClass = field.full ? " full" : "";
+    const required = field.required ? " required" : "";
+    const min = field.min !== undefined ? ` min="${escapeHtml(field.min)}"` : "";
+    const value = field.value ?? "";
+
+    if (field.type === "select") {
+        const options = (field.options || []).map((option) => (
+            `<option value="${escapeHtml(option.value)}" ${String(option.value) === String(value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`
+        )).join("");
+        return `<label class="field${fullClass}"><span>${escapeHtml(field.label)}</span><select name="${escapeHtml(field.name)}"${required}>${options}</select></label>`;
+    }
+
+    if (field.type === "textarea") {
+        return `<label class="field${fullClass}"><span>${escapeHtml(field.label)}</span><textarea name="${escapeHtml(field.name)}"${required}>${escapeHtml(value)}</textarea></label>`;
+    }
+
+    return `<label class="field${fullClass}"><span>${escapeHtml(field.label)}</span><input name="${escapeHtml(field.name)}" type="${escapeHtml(field.type || "text")}" value="${escapeHtml(value)}"${min}${required}></label>`;
+}
+
+function validateDialogPayload(form, fields, payload) {
+    const invalid = fields.find((field) => {
+        if (field.required && String(payload[field.name] ?? "").trim() === "") {
+            return true;
+        }
+        if (field.type === "number" && payload[field.name] !== "" && Number.isNaN(Number(payload[field.name]))) {
+            return true;
+        }
+        return false;
+    });
+
+    if (!invalid) {
+        return true;
+    }
+
+    const error = document.createElement("p");
+    error.className = "field-error field full";
+    error.textContent = `请正确填写${invalid.label}`;
+    form.prepend(error);
+    form.elements[invalid.name]?.focus();
+    return false;
+}
+
+function clearDialogError(form) {
+    form.querySelector(".field-error")?.remove();
+}
+
+function openConfirmDialog(config) {
+    const dialog = document.querySelector("#confirmDialog");
+    const title = document.querySelector("#confirmDialogTitle");
+    const message = document.querySelector("#confirmDialogMessage");
+    const confirmButton = document.querySelector("#confirmDialogConfirm");
+
+    state.lastFocusedElement = document.activeElement;
+    state.activeDialog = dialog;
+    title.textContent = config.title;
+    message.textContent = config.message;
+    confirmButton.textContent = config.confirmText || "确认";
+    confirmButton.onclick = async () => {
+        await withButton(confirmButton, "处理中", async () => {
+            await config.onConfirm();
+            closeConfirmDialog();
+        });
+    };
+    dialog.hidden = false;
+    confirmButton.focus();
+}
+
+function closeConfirmDialog() {
+    const dialog = document.querySelector("#confirmDialog");
+    dialog.hidden = true;
+    document.querySelector("#confirmDialogConfirm").onclick = null;
+    restoreDialogFocus(dialog);
+}
+
+function restoreDialogFocus(dialog) {
+    if (state.activeDialog === dialog) {
+        state.activeDialog = null;
+    }
+    if (state.lastFocusedElement && typeof state.lastFocusedElement.focus === "function") {
+        state.lastFocusedElement.focus();
+    }
+    state.lastFocusedElement = null;
+}
+
+function sanitizeHtml(html) {
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    container.querySelectorAll("script, style, iframe, object, embed").forEach((node) => node.remove());
+    container.querySelectorAll("*").forEach((node) => {
+        [...node.attributes].forEach((attribute) => {
+            const name = attribute.name.toLowerCase();
+            const value = attribute.value.trim().toLowerCase();
+            if (name.startsWith("on") || (["href", "src", "xlink:href"].includes(name) && value.startsWith("javascript:"))) {
+                node.removeAttribute(attribute.name);
+            }
+        });
+    });
+    return container.innerHTML;
 }
 
 function isActiveAiModel(id) {

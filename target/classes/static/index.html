@@ -286,6 +286,42 @@
     </section>
 </div>
 
+<div id="formDialog" class="dialog-backdrop" hidden>
+    <section class="dialog-panel form-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="formDialogTitle">
+        <div class="dialog-head">
+            <div>
+                <p id="formDialogEyebrow" class="eyebrow">Edit</p>
+                <h2 id="formDialogTitle">编辑信息</h2>
+                <p id="formDialogSummary" class="dialog-summary"></p>
+            </div>
+            <button id="formDialogClose" class="btn secondary dialog-close" type="button" aria-label="关闭编辑弹窗">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <form id="formDialogForm" class="dialog-form"></form>
+    </section>
+</div>
+
+<div id="confirmDialog" class="dialog-backdrop" hidden>
+    <section class="dialog-panel confirm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Confirm</p>
+                <h2 id="confirmDialogTitle">确认操作</h2>
+                <p id="confirmDialogMessage" class="dialog-summary"></p>
+            </div>
+            <button id="confirmDialogClose" class="btn secondary dialog-close" type="button" aria-label="关闭确认弹窗">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="dialog-actions">
+            <button id="confirmDialogCancel" class="btn secondary" type="button">取消</button>
+            <button id="confirmDialogConfirm" class="btn danger" type="button">确认</button>
+        </div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

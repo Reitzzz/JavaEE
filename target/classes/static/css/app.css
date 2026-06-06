@@ -124,7 +124,11 @@ code {
     padding: 0 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+}
+
+.btn:active:not([disabled]) {
+    transform: translateY(1px);
 }
 
 .btn.primary {
@@ -163,9 +167,17 @@ code {
     background: var(--color-danger);
 }
 
+.btn.danger:hover {
+    background: #9a3412;
+}
+
 .btn.warning {
     color: #ffffff;
     background: var(--color-warning);
+}
+
+.btn.warning:hover {
+    background: #92400e;
 }
 
 .btn.wide {
@@ -619,6 +631,10 @@ td.actions {
     align-content: start;
 }
 
+.ai-prompt textarea {
+    min-height: 188px;
+}
+
 .ai-answer {
     min-height: 260px;
     border: 1px solid var(--color-border);
@@ -626,7 +642,30 @@ td.actions {
     padding: 16px;
     color: #263447;
     background: var(--color-surface-alt);
-    white-space: pre-wrap;
+    overflow: auto;
+    white-space: normal;
+}
+
+.ai-answer > * + * {
+    margin-top: 10px;
+}
+
+.ai-answer ul,
+.ai-answer ol {
+    margin: 10px 0 0;
+    padding-left: 22px;
+}
+
+.ai-answer pre {
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 12px;
+    background: #eef3f8;
+}
+
+.ai-answer.loading {
+    color: var(--color-muted);
 }
 
 .ai-model-panel {
@@ -680,6 +719,14 @@ td.actions {
     box-shadow: var(--shadow-soft);
 }
 
+.form-dialog-panel {
+    width: min(720px, 100%);
+}
+
+.confirm-dialog-panel {
+    width: min(520px, 100%);
+}
+
 .dialog-head {
     display: flex;
     align-items: flex-start;
@@ -707,6 +754,34 @@ td.actions {
     border-left: 0;
     border-radius: 0;
     box-shadow: none;
+}
+
+.dialog-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 0 18px 18px;
+}
+
+.dialog-form .field.full {
+    grid-column: 1 / -1;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 18px 18px;
+}
+
+.dialog-actions .btn {
+    min-width: 104px;
+}
+
+.field-error {
+    color: var(--color-danger);
+    font-size: 13px;
+    font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -802,6 +877,108 @@ td.actions {
 
     .workspace {
         padding: 14px;
+    }
+
+    .table-card {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td {
+        display: block;
+        width: 100%;
+    }
+
+    table {
+        min-width: 0;
+    }
+
+    thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    tbody {
+        display: grid;
+        gap: 12px;
+    }
+
+    tbody tr {
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--color-surface);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+    }
+
+    tbody tr:hover {
+        background: var(--color-surface);
+    }
+
+    td {
+        display: grid;
+        grid-template-columns: minmax(82px, 32%) minmax(0, 1fr);
+        gap: 12px;
+        border-bottom: 0;
+        padding: 8px 0;
+        word-break: break-word;
+    }
+
+    td::before {
+        content: attr(data-label);
+        color: var(--color-muted);
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    td.actions {
+        display: flex;
+        padding-top: 12px;
+    }
+
+    td.actions::before {
+        content: none;
+    }
+
+    td.actions .btn {
+        flex: 1 1 120px;
+    }
+
+    .row-empty {
+        display: block;
+        text-align: center;
+    }
+
+    .row-empty::before {
+        content: none;
+    }
+
+    .dialog-backdrop {
+        align-items: end;
+        padding: 12px;
+    }
+
+    .dialog-panel {
+        max-height: calc(100dvh - 24px);
+    }
+
+    .dialog-form {
+        grid-template-columns: 1fr;
+    }
+
+    .dialog-actions {
+        flex-direction: column-reverse;
     }
 
     h1 {
