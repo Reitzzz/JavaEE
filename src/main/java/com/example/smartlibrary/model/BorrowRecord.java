@@ -29,6 +29,9 @@ public class BorrowRecord {
     @TableField(exist = false)
     private String bookTitle;
     
+    @TableField(exist = false)
+    private String bookAuthor;
+    
     private LocalDateTime borrowedAt;
     private LocalDateTime dueAt;
     private LocalDateTime returnedAt;

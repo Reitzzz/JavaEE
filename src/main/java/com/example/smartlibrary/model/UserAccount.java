@@ -18,4 +18,5 @@ public class UserAccount {
     private String password;
     private String displayName;
     private boolean enabled;
+    private String status;
 }

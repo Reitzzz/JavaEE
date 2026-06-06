@@ -687,6 +687,16 @@ td.actions {
     background: #e2e8f0;
 }
 
+.badge.danger {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.badge.warning {
+    color: #9a3412;
+    background: #ffedd5;
+}
+
 .ai-layout {
     display: grid;
     grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);

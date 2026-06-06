@@ -48,6 +48,9 @@ public class BorrowService {
             throw new BusinessException("借阅天数必须在 1 到 90 天之间");
         }
         UserAccount user = currentUser(authentication);
+        if ("BLACKLISTED".equals(user.getStatus())) {
+            throw new BusinessException("您的账号已被拉黑，暂无借阅权限");
+        }
         Book book = bookService.findById(request.bookId());
         if (book == null) {
             throw new BusinessException("图书不存在");

@@ -20,6 +20,7 @@ public class StartupDataInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         addColumnIfMissing("ai_settings", "active_model_id", "BIGINT NULL");
+        addColumnIfMissing("users", "status", "VARCHAR(20) NOT NULL DEFAULT 'NORMAL'");
         createUserIfAbsent("admin", "admin123", "Administrator", "ROLE_ADMIN");
         createUserIfAbsent("reader", "reader123", "Demo Reader", "ROLE_READER");
     }

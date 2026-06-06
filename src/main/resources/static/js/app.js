@@ -3,6 +3,7 @@ const state = {
     categories: [],
     books: [],
     aiModels: [],
+    users: [],
     aiSettings: null,
     loadingButton: null,
     activeDialog: null,
@@ -21,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (isCurrentAdmin()) {
             await refreshAiSettings();
             await refreshAiModels();
+            await refreshUsers();
         }
         await refreshBorrows(false);
     });
@@ -44,6 +46,14 @@ function bindActions() {
             refreshBooks();
         }
     });
+    document.querySelector("#userKeyword").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            refreshUsers();
+        }
+    });
+    document.querySelector("#userStatusFilter").addEventListener("change", () => refreshUsers());
+    document.querySelector("#userBorrowStatusFilter").addEventListener("change", () => refreshUsers());
     document.querySelector("#loadMineBtn").addEventListener("click", () => refreshBorrows(false));
     document.querySelector("#loadAllBorrowsBtn").addEventListener("click", () => refreshBorrows(true));
     document.querySelector("#askAiBtn").addEventListener("click", askAi);
@@ -51,12 +61,27 @@ function bindActions() {
     document.querySelector("#bookForm").addEventListener("submit", saveBook);
     document.querySelector("#aiSettingsForm").addEventListener("submit", saveAiSettings);
     document.querySelector("#aiModelForm").addEventListener("submit", saveAiModel);
+    document.querySelector("#userRows").addEventListener("click", (event) => {
+        const btn = event.target.closest("button[data-action='view-user']");
+        if (btn) {
+            const userId = parseInt(btn.dataset.userId, 10);
+            const user = state.users.find(u => u.id === userId);
+            if (user) {
+                showUserBorrows(user.id, user.displayName);
+            }
+        }
+    });
     document.querySelector("#formDialogClose").addEventListener("click", closeFormDialog);
     document.querySelector("#confirmDialogClose").addEventListener("click", closeConfirmDialog);
     document.querySelector("#confirmDialogCancel").addEventListener("click", closeConfirmDialog);
     document.querySelector("#categoryBooksDialog").addEventListener("click", (event) => {
         if (event.target.id === "categoryBooksDialog") {
             closeCategoryBooksDialog();
+        }
+    });
+    document.querySelector("#userDetailDialog").addEventListener("click", (event) => {
+        if (event.target.id === "userDetailDialog") {
+            closeUserDetailDialog();
         }
     });
     document.querySelector("#formDialog").addEventListener("click", (event) => {
@@ -79,6 +104,8 @@ function bindActions() {
             closeConfirmDialog();
         } else if (!document.querySelector("#categoryBooksDialog").hidden) {
             closeCategoryBooksDialog();
+        } else if (!document.querySelector("#userDetailDialog").hidden) {
+            closeUserDetailDialog();
         }
     });
 }
@@ -124,6 +151,133 @@ function applyRoleLabels() {
     document.querySelector('[data-tab="categories"] .nav-label').textContent = categoryTitle;
     document.querySelector("#booksTitle").textContent = bookTitle;
     document.querySelector("#categoriesTitle").textContent = categoryTitle;
+}
+
+async function refreshUsers() {
+    const keyword = document.querySelector("#userKeyword").value.trim().toLowerCase();
+    const statusFilter = document.querySelector("#userStatusFilter").value;
+    const borrowStatusFilter = document.querySelector("#userBorrowStatusFilter").value;
+    
+    let allUsers = await api("/api/users");
+    const allBorrows = await api("/api/borrows"); 
+    
+    if (keyword) {
+        allUsers = allUsers.filter(u => {
+            if ((u.username && u.username.toLowerCase().includes(keyword)) ||
+                (u.displayName && u.displayName.toLowerCase().includes(keyword))) {
+                return true;
+            }
+            const userBorrows = allBorrows.filter(b => b.userId === u.id);
+            return userBorrows.some(b => b.bookTitle && b.bookTitle.toLowerCase().includes(keyword));
+        });
+    }
+    if (statusFilter) {
+        allUsers = allUsers.filter(u => u.status === statusFilter);
+    }
+    if (borrowStatusFilter) {
+        allUsers = allUsers.filter(u => {
+            const userBorrows = allBorrows.filter(b => b.userId === u.id);
+            if (borrowStatusFilter === 'OVERDUE') {
+                return userBorrows.some(b => b.status === 'BORROWED' && new Date(b.dueAt) < new Date());
+            } else if (borrowStatusFilter === 'BORROWED') {
+                return userBorrows.some(b => b.status === 'BORROWED' && new Date(b.dueAt) >= new Date());
+            } else {
+                return userBorrows.some(b => b.status === borrowStatusFilter);
+            }
+        });
+    }
+    
+    state.users = allUsers;
+    renderUsers();
+}
+
+function renderUsers() {
+    const rows = document.querySelector("#userRows");
+    if (state.users.length === 0) {
+        rows.innerHTML = emptyRow(8, "暂无用户数据");
+        return;
+    }
+    rows.innerHTML = state.users.map((user) => `
+        <tr>
+            <td data-label="ID">${user.id}</td>
+            <td data-label="账号">${escapeHtml(user.username)}</td>
+            <td data-label="姓名">${escapeHtml(user.displayName)}</td>
+            <td data-label="状态"><span class="badge ${user.status === 'NORMAL' ? 'success' : 'danger'}">${user.status === 'NORMAL' ? '正常' : '已拉黑'}</span></td>
+            <td data-label="总借阅">${user.totalBorrows}</td>
+            <td data-label="未归还"><span class="badge ${user.unreturnedBorrows > 0 ? 'warning' : 'muted'}">${user.unreturnedBorrows}</span></td>
+            <td data-label="最近借阅时间">${formatTime(user.lastBorrowTime) || '-'}</td>
+            <td class="actions">
+                <button class="btn secondary" data-action="view-user" data-user-id="${user.id}" type="button">详情</button>
+                ${user.status === 'NORMAL' 
+                    ? `<button class="btn danger" onclick="toggleUserBan(${user.id}, true)" type="button">拉黑</button>`
+                    : `<button class="btn secondary" onclick="toggleUserBan(${user.id}, false)" type="button">解封</button>`
+                }
+            </td>
+        </tr>
+    `).join("");
+}
+
+function toggleUserBan(id, isBan) {
+    const actionName = isBan ? "拉黑" : "解封";
+    openConfirmDialog({
+        title: `确认${actionName}用户`,
+        message: `您确定要${actionName}该用户吗？${isBan ? '拉黑后用户将无法再借阅图书。' : '解封后用户将恢复借阅权限。'}`,
+        confirmText: `确认${actionName}`,
+        onConfirm: async () => {
+            await api(\`/api/users/\${id}/\${isBan ? 'ban' : 'unban'}\`, { method: "POST" });
+            showMessage(\`用户已\${actionName}\`);
+            await refreshUsers();
+        }
+    });
+}
+
+async function showUserBorrows(userId, displayName) {
+    const rows = await api("/api/borrows");
+    const userBorrows = rows.filter(r => r.userId === userId);
+    
+    document.querySelector("#userDetailTitle").textContent = \`\${displayName} 的借阅详情\`;
+    document.querySelector("#userDetailSummary").textContent = \`共 \${userBorrows.length} 条记录\`;
+    
+    const tbody = document.querySelector("#userDetailRows");
+    if (userBorrows.length === 0) {
+        tbody.innerHTML = emptyRow(6, "该用户暂无借阅记录");
+    } else {
+        tbody.innerHTML = userBorrows.map(record => {
+            const isOverdue = record.status === 'BORROWED' && new Date(record.dueAt) < new Date();
+            let statusBadge = "muted";
+            let statusText = "已归还";
+            if (record.status === 'BORROWED') {
+                if (isOverdue) {
+                    statusBadge = "danger";
+                    statusText = "逾期";
+                } else {
+                    statusBadge = "success";
+                    statusText = "借阅中";
+                }
+            }
+            return \`
+            <tr>
+                <td data-label="书名">\${escapeHtml(record.bookTitle)}</td>
+                <td data-label="作者">\${escapeHtml(record.bookAuthor || '--')}</td>
+                <td data-label="借出时间">\${formatTime(record.borrowedAt)}</td>
+                <td data-label="应还时间">\${formatTime(record.dueAt)}</td>
+                <td data-label="实际归还">\${formatTime(record.returnedAt) || '-'}</td>
+                <td data-label="状态"><span class="badge \${statusBadge}">\${statusText}</span></td>
+            </tr>
+            \`;
+        }).join("");
+    }
+    
+    const dialog = document.querySelector("#userDetailDialog");
+    state.lastFocusedElement = document.activeElement;
+    state.activeDialog = dialog;
+    dialog.hidden = false;
+}
+
+function closeUserDetailDialog() {
+    const dialog = document.querySelector("#userDetailDialog");
+    dialog.hidden = true;
+    restoreDialogFocus(dialog);
 }
 
 async function refreshCategories() {

@@ -11,14 +11,14 @@ import java.util.List;
 @Mapper
 public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
 
-    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title " +
+    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title, b.author AS book_author " +
             "FROM borrow_records br " +
             "INNER JOIN users u ON u.id = br.user_id " +
             "INNER JOIN books b ON b.id = br.book_id " +
             "ORDER BY br.id DESC")
     List<BorrowRecord> findAllWithDetails();
 
-    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title " +
+    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title, b.author AS book_author " +
             "FROM borrow_records br " +
             "INNER JOIN users u ON u.id = br.user_id " +
             "INNER JOIN books b ON b.id = br.book_id " +
@@ -26,7 +26,7 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
             "ORDER BY br.id DESC")
     List<BorrowRecord> findByUserIdWithDetails(@Param("userId") Long userId);
 
-    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title " +
+    @Select("SELECT br.*, u.username, u.display_name, b.title AS book_title, b.author AS book_author " +
             "FROM borrow_records br " +
             "INNER JOIN users u ON u.id = br.user_id " +
             "INNER JOIN books b ON b.id = br.book_id " +
