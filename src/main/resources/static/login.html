@@ -32,12 +32,18 @@
         </div>
     </section>
 
-    <section class="auth-card" aria-label="登录表单">
+    <section class="auth-card" aria-label="账号入口">
         <div class="section-head compact">
             <p class="eyebrow">Account</p>
-            <h2>登录系统</h2>
+            <h2 id="authTitle">登录系统</h2>
         </div>
-        <form class="form-stack" method="post" action="/login">
+        <div class="auth-slider" role="tablist" aria-label="账号操作">
+            <button id="loginTab" class="auth-slider-tab active" type="button" aria-selected="true">登录</button>
+            <button id="registerTab" class="auth-slider-tab" type="button" aria-selected="false">注册</button>
+            <span class="auth-slider-thumb" aria-hidden="true"></span>
+        </div>
+        <p id="authMessage" class="auth-message" role="status" aria-live="polite" hidden></p>
+        <form id="loginForm" class="form-stack" method="post" action="/login">
             <label class="field">
                 <span>用户名</span>
                 <input name="username" autocomplete="username" required placeholder="admin 或 reader">
@@ -54,18 +60,45 @@
                 </svg>
                 登录
             </button>
+            <div class="demo-list" aria-label="示例账号">
+                <p class="demo-title">示例账号</p>
+                <div>
+                    <span>管理员</span>
+                    <code>admin / admin123</code>
+                </div>
+                <div>
+                    <span>读者</span>
+                    <code>reader / reader123</code>
+                </div>
+            </div>
         </form>
-        <div class="demo-list" aria-label="演示账号">
-            <div>
-                <span>管理员</span>
-                <code>admin / admin123</code>
-            </div>
-            <div>
-                <span>读者</span>
-                <code>reader / reader123</code>
-            </div>
-        </div>
+        <form id="registerForm" class="form-stack" hidden>
+            <label class="field">
+                <span>用户名</span>
+                <input name="username" autocomplete="username" required minlength="3" maxlength="60" pattern="[A-Za-z0-9_]+" placeholder="字母、数字或下划线">
+            </label>
+            <label class="field">
+                <span>显示名称</span>
+                <input name="displayName" autocomplete="name" maxlength="80" placeholder="例如：张三">
+            </label>
+            <label class="field">
+                <span>密码</span>
+                <input type="password" name="password" autocomplete="new-password" required minlength="6" placeholder="至少 6 位">
+            </label>
+            <label class="field">
+                <span>确认密码</span>
+                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="6" placeholder="再次输入密码">
+            </label>
+            <button class="btn primary wide" type="submit">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M12 5v14"/>
+                    <path d="M5 12h14"/>
+                </svg>
+                注册读者账号
+            </button>
+        </form>
     </section>
 </main>
+<script src="/js/auth.js"></script>
 </body>
 </html>

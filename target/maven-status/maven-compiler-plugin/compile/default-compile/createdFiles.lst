@@ -1,6 +1,7 @@
 com\example\smartlibrary\dto\CategoryRequest.class
 com\example\smartlibrary\controller\BookController.class
 com\example\smartlibrary\service\DatabaseUserDetailsService.class
+com\example\smartlibrary\dto\RegisterRequest.class
 com\example\smartlibrary\model\Category.class
 com\example\smartlibrary\service\BookService.class
 com\example\smartlibrary\mapper\BorrowRecordMapper.class
