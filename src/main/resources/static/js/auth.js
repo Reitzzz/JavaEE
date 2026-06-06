@@ -14,6 +14,13 @@ if (window.location.pathname === "/register") {
     switchAuthMode("register");
 }
 
+if (window.location.search.includes("error")) {
+    showAuthMessage("用户名或密码错误，请重试", true);
+}
+if (window.location.search.includes("logout")) {
+    showAuthMessage("您已成功退出登录");
+}
+
 function switchAuthMode(mode) {
     const isLogin = mode === "login";
     authSlider.classList.toggle("register-mode", !isLogin);
@@ -53,10 +60,10 @@ async function registerAccount(event) {
             throw new Error(result.message || "注册失败，请检查输入");
         }
         registerForm.reset();
-        loginForm.elements.username.value = payload.username;
+        loginForm.reset();
         switchAuthMode("login");
         showAuthMessage(result.message || "注册成功，请登录");
-        loginForm.elements.password.focus();
+        loginForm.elements.username.focus();
     } catch (error) {
         showAuthMessage(error.message, true);
     } finally {

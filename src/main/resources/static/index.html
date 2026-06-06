@@ -23,46 +23,46 @@
                     <circle class="brand-icon-dot" cx="26" cy="21.5" r="1.4"/>
                 </svg>
             </span>
-            <div>
+            <div class="brand-text">
                 <strong>Smart Library</strong>
-                <span>JavaEE Project</span>
+                <span>Admin Console</span>
             </div>
         </div>
         <nav class="nav-list">
-            <button class="nav-item active" data-tab="books">
+            <button class="nav-item active" data-tab="books" title="图书管理">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>
                 <span class="nav-label">图书管理</span>
             </button>
-            <button class="nav-item" data-tab="categories">
+            <button class="nav-item" data-tab="categories" title="分类管理">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
                 <span class="nav-label">分类管理</span>
             </button>
-            <button class="nav-item admin-only" data-tab="users">
+            <button class="nav-item admin-only" data-tab="users" title="用户管理">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span class="nav-label">用户管理</span>
             </button>
-            <button class="nav-item" data-tab="borrows">
+            <button class="nav-item" data-tab="borrows" title="借阅记录">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                借阅记录
+                <span class="nav-label">借阅记录</span>
             </button>
-            <button class="nav-item" data-tab="ai">
+            <button class="nav-item" data-tab="ai" title="AI 助手">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
-                AI 助手
+                <span class="nav-label">AI 助手</span>
             </button>
         </nav>
-        <form method="post" action="/logout">
-            <button class="btn subtle wide" type="submit">
+        <form method="post" action="/logout" class="sidebar-bottom">
+            <button class="nav-item logout-btn" type="submit" title="退出系统">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-                退出登录
+                <span class="nav-label">退出系统</span>
             </button>
         </form>
     </aside>
 
     <main class="workspace">
         <header class="topbar">
-            <div>
-                <p class="eyebrow">Dashboard</p>
+            <div class="sys-title">
                 <h1>智能图书借阅管理系统</h1>
+                <span class="badge muted">v1.0</span>
             </div>
             <div class="user-pill">
                 <span class="status-dot" aria-hidden="true"></span>
@@ -93,20 +93,14 @@
 
         <section id="books" class="view active">
             <div class="section-head">
-                <div>
-                    <p class="eyebrow">Books</p>
-                    <h2 id="booksTitle">图书管理</h2>
-                </div>
-                <div class="toolbar">
-                    <label class="search-field">
-                        <span class="sr-only">搜索图书</span>
-                        <input id="bookKeyword" placeholder="搜索书名、作者或 ISBN">
-                    </label>
-                    <button id="searchBookBtn" class="btn secondary" type="button">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        搜索
-                    </button>
-                </div>
+                <h2 id="booksTitle">图书管理</h2>
+            </div>
+            <div class="filter-bar">
+                <label class="search-field">
+                    <span class="sr-only">搜索图书</span>
+                    <input id="bookKeyword" placeholder="输入书名、作者或 ISBN">
+                </label>
+                <button id="searchBookBtn" class="btn secondary" type="button">搜索</button>
             </div>
             <form id="bookForm" class="panel-form admin-only">
                 <label class="field"><span>ISBN</span><input name="isbn" required></label>
@@ -140,10 +134,7 @@
 
         <section id="categories" class="view">
             <div class="section-head">
-                <div>
-                    <p class="eyebrow">Categories</p>
-                    <h2 id="categoriesTitle">分类管理</h2>
-                </div>
+                <h2 id="categoriesTitle">分类管理</h2>
             </div>
             <form id="categoryForm" class="panel-form compact-form admin-only">
                 <label class="field"><span>分类名称</span><input name="name" required></label>
@@ -170,27 +161,24 @@
 
         <section id="users" class="view admin-only">
             <div class="section-head">
-                <div>
-                    <p class="eyebrow">Users</p>
-                    <h2 id="usersTitle">用户管理</h2>
-                </div>
-                <div class="toolbar">
-                    <label class="search-field">
-                        <span class="sr-only">搜索用户</span>
-                        <input id="userKeyword" placeholder="搜索用户名或姓名">
-                    </label>
-                    <select id="userStatusFilter" class="btn secondary">
-                        <option value="">全部状态</option>
-                        <option value="NORMAL">正常</option>
-                        <option value="BLACKLISTED">已拉黑</option>
-                    </select>
-                    <select id="userBorrowStatusFilter" class="btn secondary">
-                        <option value="">全部借阅状态</option>
-                        <option value="BORROWED">借阅中</option>
-                        <option value="RETURNED">已归还</option>
-                        <option value="OVERDUE">逾期</option>
-                    </select>
-                </div>
+                <h2 id="usersTitle">用户管理</h2>
+            </div>
+            <div class="filter-bar">
+                <label class="search-field">
+                    <span class="sr-only">搜索用户</span>
+                    <input id="userKeyword" placeholder="搜索用户名、姓名或借阅书名">
+                </label>
+                <select id="userStatusFilter" class="btn secondary" aria-label="用户状态筛选">
+                    <option value="">全部状态</option>
+                    <option value="NORMAL">正常</option>
+                    <option value="BLACKLISTED">已拉黑</option>
+                </select>
+                <select id="userBorrowStatusFilter" class="btn secondary" aria-label="借阅状态筛选">
+                    <option value="">全部借阅状态</option>
+                    <option value="BORROWED">借阅中</option>
+                    <option value="RETURNED">已归还</option>
+                    <option value="OVERDUE">逾期</option>
+                </select>
             </div>
             <div class="table-card">
                 <table>
@@ -213,14 +201,11 @@
 
         <section id="borrows" class="view">
             <div class="section-head">
-                <div>
-                    <p class="eyebrow">Borrowing</p>
-                    <h2>借阅记录</h2>
-                </div>
-                <div class="toolbar">
-                    <button id="loadMineBtn" class="btn secondary" type="button">我的借阅</button>
-                    <button id="loadAllBorrowsBtn" class="btn secondary admin-only" type="button">全部借阅</button>
-                </div>
+                <h2>借阅记录</h2>
+            </div>
+            <div class="filter-bar">
+                <button id="loadMineBtn" class="btn secondary" type="button">我的借阅</button>
+                <button id="loadAllBorrowsBtn" class="btn secondary admin-only" type="button">全部借阅</button>
             </div>
             <div class="table-card">
                 <table>
@@ -241,10 +226,7 @@
 
         <section id="ai" class="view">
             <div class="section-head">
-                <div>
-                    <p class="eyebrow">AI Assistant</p>
-                    <h2>AI 馆藏推荐助手</h2>
-                </div>
+                <h2>AI 馆藏推荐助手</h2>
             </div>
             <div class="ai-layout">
                 <div class="ai-prompt">
@@ -260,8 +242,7 @@
                 <output id="aiAnswer" class="ai-answer">AI 回复会显示在这里。</output>
             </div>
             <div class="ai-model-panel admin-only">
-                <div class="section-head compact">
-                    <p class="eyebrow">Model Management</p>
+                <div class="section-head">
                     <h2>模型管理</h2>
                 </div>
                 <form id="aiSettingsForm" class="panel-form compact-form">

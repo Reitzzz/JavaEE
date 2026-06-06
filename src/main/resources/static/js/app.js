@@ -29,9 +29,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function bindNavigation() {
-    document.querySelectorAll(".nav-item").forEach((item) => {
+    document.querySelectorAll(".nav-item[data-tab]").forEach((item) => {
         item.addEventListener("click", () => {
-            document.querySelectorAll(".nav-item, .view").forEach((node) => node.classList.remove("active"));
+            document.querySelectorAll(".nav-item[data-tab], .view").forEach((node) => node.classList.remove("active"));
             item.classList.add("active");
             document.querySelector(`#${item.dataset.tab}`).classList.add("active");
         });
@@ -224,8 +224,8 @@ function toggleUserBan(id, isBan) {
         message: `您确定要${actionName}该用户吗？${isBan ? '拉黑后用户将无法再借阅图书。' : '解封后用户将恢复借阅权限。'}`,
         confirmText: `确认${actionName}`,
         onConfirm: async () => {
-            await api(\`/api/users/\${id}/\${isBan ? 'ban' : 'unban'}\`, { method: "POST" });
-            showMessage(\`用户已\${actionName}\`);
+            await api(`/api/users/${id}/${isBan ? 'ban' : 'unban'}`, { method: "POST" });
+            showMessage(`用户已${actionName}`);
             await refreshUsers();
         }
     });
@@ -235,8 +235,8 @@ async function showUserBorrows(userId, displayName) {
     const rows = await api("/api/borrows");
     const userBorrows = rows.filter(r => r.userId === userId);
     
-    document.querySelector("#userDetailTitle").textContent = \`\${displayName} 的借阅详情\`;
-    document.querySelector("#userDetailSummary").textContent = \`共 \${userBorrows.length} 条记录\`;
+    document.querySelector("#userDetailTitle").textContent = `${displayName} 的借阅详情`;
+    document.querySelector("#userDetailSummary").textContent = `共 ${userBorrows.length} 条记录`;
     
     const tbody = document.querySelector("#userDetailRows");
     if (userBorrows.length === 0) {
@@ -255,16 +255,16 @@ async function showUserBorrows(userId, displayName) {
                     statusText = "借阅中";
                 }
             }
-            return \`
+            return `
             <tr>
-                <td data-label="书名">\${escapeHtml(record.bookTitle)}</td>
-                <td data-label="作者">\${escapeHtml(record.bookAuthor || '--')}</td>
-                <td data-label="借出时间">\${formatTime(record.borrowedAt)}</td>
-                <td data-label="应还时间">\${formatTime(record.dueAt)}</td>
-                <td data-label="实际归还">\${formatTime(record.returnedAt) || '-'}</td>
-                <td data-label="状态"><span class="badge \${statusBadge}">\${statusText}</span></td>
+                <td data-label="书名">${escapeHtml(record.bookTitle)}</td>
+                <td data-label="作者">${escapeHtml(record.bookAuthor || '--')}</td>
+                <td data-label="借出时间">${formatTime(record.borrowedAt)}</td>
+                <td data-label="应还时间">${formatTime(record.dueAt)}</td>
+                <td data-label="实际归还">${formatTime(record.returnedAt) || '-'}</td>
+                <td data-label="状态"><span class="badge ${statusBadge}">${statusText}</span></td>
             </tr>
-            \`;
+            `;
         }).join("");
     }
     
