@@ -58,10 +58,11 @@ public class AiController {
     @PostMapping("/models")
     public AiModel addModel(@RequestBody AiModelRequest request) {
         String modelName = request == null ? null : request.modelName();
-        llmService.testModel(modelName);
+        String provider = request == null || request.provider() == null || request.provider().isBlank() ? "MiMo" : request.provider();
+        llmService.testModel(provider, modelName);
         AiModel model = new AiModel();
         model.setModelName(modelName.trim());
-        model.setProvider("MiMo");
+        model.setProvider(provider.trim());
         model.setCreatedAt(LocalDateTime.now());
         aiModelMapper.insert(model);
         return aiModelMapper.selectById(model.getId());
@@ -83,7 +84,7 @@ public class AiController {
         }
         AiSettings settings = aiSettingsMapper.selectById(1L);
         if (settings == null) {
-            settings = new AiSettings("", id);
+            settings = new AiSettings("", "", id);
             aiSettingsMapper.insert(settings);
         } else {
             settings.setActiveModelId(id);
@@ -96,6 +97,7 @@ public class AiController {
     public Map<String, Object> settings() {
         AiSettings settings = aiSettingsMapper.selectById(1L);
         String apiKey = settings != null ? settings.getApiKey() : "";
+        String deepseekApiKey = settings != null ? settings.getDeepseekApiKey() : "";
         Long activeModelId = settings != null ? settings.getActiveModelId() : null;
         if (activeModelId == null) {
             QueryWrapper<AiModel> query = new QueryWrapper<>();
@@ -108,6 +110,8 @@ public class AiController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("apiKeyConfigured", apiKey != null && !apiKey.isBlank());
         result.put("apiKeyMask", maskApiKey(apiKey));
+        result.put("deepseekApiKeyConfigured", deepseekApiKey != null && !deepseekApiKey.isBlank());
+        result.put("deepseekApiKeyMask", maskApiKey(deepseekApiKey));
         result.put("activeModelId", activeModelId);
         return result;
     }
@@ -117,12 +121,25 @@ public class AiController {
         if (request == null || request.apiKey() == null || request.apiKey().isBlank()) {
             throw new BusinessException("API Key 不能为空");
         }
+        String provider = request.provider() == null || request.provider().isBlank() ? "MiMo" : request.provider();
         AiSettings settings = aiSettingsMapper.selectById(1L);
         if (settings == null) {
-            settings = new AiSettings(request.apiKey().trim(), null);
+            settings = new AiSettings();
+            settings.setId(1L);
+            if ("DeepSeek".equalsIgnoreCase(provider)) {
+                settings.setDeepseekApiKey(request.apiKey().trim());
+                settings.setApiKey("");
+            } else {
+                settings.setApiKey(request.apiKey().trim());
+                settings.setDeepseekApiKey("");
+            }
             aiSettingsMapper.insert(settings);
         } else {
-            settings.setApiKey(request.apiKey().trim());
+            if ("DeepSeek".equalsIgnoreCase(provider)) {
+                settings.setDeepseekApiKey(request.apiKey().trim());
+            } else {
+                settings.setApiKey(request.apiKey().trim());
+            }
             aiSettingsMapper.updateById(settings);
         }
         return Map.of("success", true, "message", "API Key 已保存");

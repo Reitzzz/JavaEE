@@ -10,6 +10,12 @@ public class LlmProperties {
     private String model;
     private String chatPath;
 
+    // DeepSeek properties
+    private String deepseekBaseUrl;
+    private String deepseekApiKey;
+    private String deepseekModel;
+    private String deepseekChatPath;
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -40,6 +46,38 @@ public class LlmProperties {
 
     public void setChatPath(String chatPath) {
         this.chatPath = chatPath;
+    }
+
+    public String getDeepseekBaseUrl() {
+        return deepseekBaseUrl;
+    }
+
+    public void setDeepseekBaseUrl(String deepseekBaseUrl) {
+        this.deepseekBaseUrl = deepseekBaseUrl;
+    }
+
+    public String getDeepseekApiKey() {
+        return deepseekApiKey;
+    }
+
+    public void setDeepseekApiKey(String deepseekApiKey) {
+        this.deepseekApiKey = deepseekApiKey;
+    }
+
+    public String getDeepseekModel() {
+        return deepseekModel;
+    }
+
+    public void setDeepseekModel(String deepseekModel) {
+        this.deepseekModel = deepseekModel;
+    }
+
+    public String getDeepseekChatPath() {
+        return deepseekChatPath;
+    }
+
+    public void setDeepseekChatPath(String deepseekChatPath) {
+        this.deepseekChatPath = deepseekChatPath;
     }
 
     public boolean hasApiKey() {

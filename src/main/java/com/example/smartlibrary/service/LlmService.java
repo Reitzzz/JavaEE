@@ -3,6 +3,7 @@ package com.example.smartlibrary.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.smartlibrary.config.LlmProperties;
 import com.example.smartlibrary.exception.BusinessException;
+import com.example.smartlibrary.constant.LlmProvider;
 import com.example.smartlibrary.mapper.AiModelMapper;
 import com.example.smartlibrary.mapper.AiSettingsMapper;
 import com.example.smartlibrary.model.AiModel;
@@ -53,7 +54,8 @@ public class LlmService {
             return emitter;
         }
         List<Book> books = bookService.findAll(null);
-        if (!hasApiKey()) {
+        AiModel currentModel = currentAiModel();
+        if (!hasApiKey(currentModel.getProvider())) {
             sendAndComplete(emitter, fallbackAnswer(question, books));
             return emitter;
         }
@@ -61,7 +63,7 @@ public class LlmService {
         Thread.startVirtualThread(() -> {
             try {
                 requestChatStream(
-                        currentModelName(),
+                        currentModel,
                         "你是智能图书管理系统的图书推荐助手。请基于馆藏数据回答，中文输出，简洁实用。",
                         "馆藏数据：" + summarizeBooks(books) + "\n用户问题：" + question.trim(),
                         emitter);
@@ -77,9 +79,9 @@ public class LlmService {
         return emitter;
     }
 
-    private void requestChatStream(String modelName, String systemPrompt, String userPrompt, SseEmitter emitter) {
+    private void requestChatStream(AiModel model, String systemPrompt, String userPrompt, SseEmitter emitter) {
         ObjectNode body = objectMapper.createObjectNode();
-        body.put("model", modelName);
+        body.put("model", model.getModelName());
         body.put("stream", true);
         ArrayNode messages = body.putArray("messages");
         messages.addObject().put("role", "system").put("content", systemPrompt);
@@ -91,9 +93,9 @@ public class LlmService {
                     .build();
             
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(currentBaseUrl() + currentChatPath()))
+                    .uri(java.net.URI.create(currentBaseUrl(model.getProvider()) + currentChatPath(model.getProvider())))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + currentApiKey())
+                    .header("Authorization", "Bearer " + currentApiKey(model.getProvider()))
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
                     .build();
 
@@ -135,10 +137,10 @@ public class LlmService {
         }
     }
 
-    public void testModel(String modelName) {
+    public void testModel(String provider, String modelName) {
         String normalized = normalizeModelName(modelName);
-        if (!hasApiKey()) {
-            throw new BusinessException("请先在管理员页面配置 API Key 后再测试模型");
+        if (!hasApiKey(provider)) {
+            throw new BusinessException("请先在管理员页面配置该服务商的 API Key 后再测试模型");
         }
         try {
             ObjectNode body = objectMapper.createObjectNode();
@@ -148,11 +150,11 @@ public class LlmService {
             messages.addObject().put("role", "user").put("content", "请只回复：测试成功");
 
             JsonNode response = RestClient.builder()
-                    .baseUrl(currentBaseUrl())
-                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + currentApiKey())
+                    .baseUrl(currentBaseUrl(provider))
+                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + currentApiKey(provider))
                     .build()
                     .post()
-                    .uri(currentChatPath())
+                    .uri(currentChatPath(provider))
                     .body(body)
                     .retrieve()
                     .body(JsonNode.class);
@@ -168,42 +170,63 @@ public class LlmService {
         }
     }
 
-    private String currentModelName() {
-        String activeModelName = aiSettingsMapper.findActiveModelName();
-        if (activeModelName != null && !activeModelName.isBlank()) {
-            return activeModelName;
+    private AiModel currentAiModel() {
+        AiModel activeModel = aiSettingsMapper.findActiveModel();
+        if (activeModel != null && activeModel.getModelName() != null && !activeModel.getModelName().isBlank()) {
+            return activeModel;
         }
         QueryWrapper<AiModel> query = new QueryWrapper<>();
         query.orderByDesc("id").last("LIMIT 1");
         AiModel firstModel = aiModelMapper.selectOne(query);
         if (firstModel != null) {
-            return firstModel.getModelName();
+            return firstModel;
         }
-        return properties.getModel();
+        AiModel defaultModel = new AiModel();
+        defaultModel.setModelName(properties.getModel());
+        defaultModel.setProvider(LlmProvider.MIMO);
+        return defaultModel;
     }
 
-    private boolean hasApiKey() {
-        return currentApiKey() != null && !currentApiKey().isBlank();
+    private boolean hasApiKey(String provider) {
+        String key = currentApiKey(provider);
+        return key != null && !key.isBlank();
     }
 
-    private String currentApiKey() {
+    private String currentApiKey(String provider) {
         AiSettings settings = aiSettingsMapper.selectById(1L);
-        if (settings != null && settings.hasApiKey()) {
-            return settings.getApiKey();
+        if (settings != null) {
+            if (LlmProvider.DEEPSEEK.equalsIgnoreCase(provider)) {
+                if (settings.getDeepseekApiKey() != null && !settings.getDeepseekApiKey().isBlank()) {
+                    return settings.getDeepseekApiKey();
+                }
+            } else {
+                if (settings.hasApiKey()) {
+                    return settings.getApiKey();
+                }
+            }
+        }
+        if (LlmProvider.DEEPSEEK.equalsIgnoreCase(provider)) {
+            return properties.getDeepseekApiKey();
         }
         return properties.getApiKey();
     }
 
-    private String currentBaseUrl() {
-        String apiKey = currentApiKey();
+    private String currentBaseUrl(String provider) {
+        if (LlmProvider.DEEPSEEK.equalsIgnoreCase(provider)) {
+            return properties.getDeepseekBaseUrl();
+        }
+        String apiKey = currentApiKey(provider);
         if (apiKey != null && apiKey.trim().startsWith("tp-")) {
             return MIMO_TOKEN_PLAN_BASE_URL;
         }
         return properties.getBaseUrl();
     }
 
-    private String currentChatPath() {
-        String apiKey = currentApiKey();
+    private String currentChatPath(String provider) {
+        if (LlmProvider.DEEPSEEK.equalsIgnoreCase(provider)) {
+            return properties.getDeepseekChatPath();
+        }
+        String apiKey = currentApiKey(provider);
         if (apiKey != null && apiKey.trim().startsWith("tp-")) {
             return "/chat/completions";
         }

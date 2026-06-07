@@ -61,6 +61,17 @@ function bindActions() {
     document.querySelector("#bookForm").addEventListener("submit", saveBook);
     document.querySelector("#aiSettingsForm").addEventListener("submit", saveAiSettings);
     document.querySelector("#aiModelForm").addEventListener("submit", saveAiModel);
+    document.querySelector("#settingProviderSelect").addEventListener("change", () => renderAiSettings());
+    document.querySelector("#modelProviderSelect").addEventListener("change", (event) => {
+        const input = document.querySelector("#modelNameInput");
+        if (event.target.value === "DeepSeek") {
+            input.value = "deepseek-chat";
+            input.placeholder = "例如：deepseek-chat";
+        } else {
+            input.value = "mimo-v2.5-pro";
+            input.placeholder = "例如：mimo-v2.5-pro";
+        }
+    });
     document.querySelector("#userRows").addEventListener("click", (event) => {
         const btn = event.target.closest("button[data-action='view-user']");
         if (btn) {
@@ -611,28 +622,68 @@ async function refreshAiSettings() {
 
 function renderAiSettings() {
     const status = document.querySelector("#aiSettingsStatus");
-    if (state.aiSettings?.apiKeyConfigured) {
-        status.textContent = `API Key 已配置：${state.aiSettings.apiKeyMask}`;
+    const provider = document.querySelector("#settingProviderSelect")?.value || "MiMo";
+    let configured = false;
+    let mask = "";
+    if (provider === "DeepSeek") {
+        configured = state.aiSettings?.deepseekApiKeyConfigured;
+        mask = state.aiSettings?.deepseekApiKeyMask;
+    } else {
+        configured = state.aiSettings?.apiKeyConfigured;
+        mask = state.aiSettings?.apiKeyMask;
+    }
+
+    status.classList.remove("error");
+    if (configured) {
+        status.textContent = `${provider} API Key 已配置：${mask}`;
         status.classList.add("success");
         return;
     }
-    status.textContent = "API Key 未配置";
+    status.textContent = `${provider} API Key 未配置`;
     status.classList.remove("success");
 }
 
 async function saveAiSettings(event) {
     event.preventDefault();
+    const status = document.querySelector("#aiSettingsStatus");
     const form = new FormData(event.target);
     const payload = Object.fromEntries(form.entries());
-    await withButton(event.submitter, "保存中", async () => {
+
+    if (!payload.provider || !payload.provider.trim()) {
+        status.textContent = "保存失败：服务商不能为空";
+        status.classList.remove("success");
+        status.classList.add("error");
+        return;
+    }
+    if (!payload.apiKey || !payload.apiKey.trim()) {
+        status.textContent = "保存失败：API Key 不能为空";
+        status.classList.remove("success");
+        status.classList.add("error");
+        return;
+    }
+
+    const button = event.submitter;
+    const originalBtnHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = "保存中...";
+    status.textContent = "正在保存...";
+    status.classList.remove("success", "error");
+
+    try {
         await api("/api/ai/settings", {
             method: "POST",
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ provider: payload.provider.trim(), apiKey: payload.apiKey.trim() })
         });
-        event.target.reset();
+        event.target.elements.apiKey.value = "";
         await refreshAiSettings();
-        showMessage("API Key 已保存，现在可以测试并添加模型");
-    });
+    } catch (error) {
+        status.textContent = "保存失败：" + (error.message || "请求异常");
+        status.classList.remove("success");
+        status.classList.add("error");
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalBtnHtml;
+    }
 }
 
 function renderAiModels() {
@@ -667,7 +718,12 @@ async function saveAiModel(event) {
             body: JSON.stringify(payload)
         });
         event.target.reset();
-        event.target.elements.modelName.value = "mimo-v2.5-pro";
+        const provider = event.target.elements.provider.value;
+        if (provider === "DeepSeek") {
+            event.target.elements.modelName.value = "deepseek-chat";
+        } else {
+            event.target.elements.modelName.value = "mimo-v2.5-pro";
+        }
         await refreshAiModels();
         await refreshAiSettings();
         showMessage("模型测试成功，已添加");

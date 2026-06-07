@@ -793,6 +793,10 @@ td.actions {
     color: #0f5f4a;
 }
 
+.form-status.error {
+    color: #9a3412;
+}
+
 .dialog-backdrop {
     position: fixed;
     inset: 0;

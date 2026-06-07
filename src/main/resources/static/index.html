@@ -247,8 +247,15 @@
                 </div>
                 <form id="aiSettingsForm" class="panel-form compact-form">
                     <label class="field">
-                        <span>MiMo API Key</span>
-                        <input name="apiKey" type="password" autocomplete="off" placeholder="请输入 MiMo API Key" required>
+                        <span>服务商</span>
+                        <select name="provider" id="settingProviderSelect">
+                            <option value="MiMo">MiMo</option>
+                            <option value="DeepSeek">DeepSeek</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>API Key</span>
+                        <input name="apiKey" type="password" autocomplete="off" placeholder="请输入 API Key" required>
                     </label>
                     <button class="btn secondary" type="submit">
                         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
@@ -258,8 +265,15 @@
                 </form>
                 <form id="aiModelForm" class="panel-form compact-form">
                     <label class="field">
+                        <span>服务商</span>
+                        <select name="provider" id="modelProviderSelect">
+                            <option value="MiMo">MiMo</option>
+                            <option value="DeepSeek">DeepSeek</option>
+                        </select>
+                    </label>
+                    <label class="field">
                         <span>模型名称</span>
-                        <input name="modelName" value="mimo-v2.5-pro" placeholder="例如：mimo-v2.5-pro" required>
+                        <input name="modelName" id="modelNameInput" value="mimo-v2.5-pro" placeholder="例如：mimo-v2.5-pro" required>
                     </label>
                     <button class="btn primary" type="submit">
                         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg>

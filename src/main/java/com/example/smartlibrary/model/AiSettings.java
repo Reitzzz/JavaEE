@@ -16,11 +16,13 @@ public class AiSettings {
     @TableId(type = IdType.INPUT) // Id is manually set to 1
     private Long id;
     private String apiKey;
+    private String deepseekApiKey;
     private Long activeModelId;
 
-    public AiSettings(String apiKey, Long activeModelId) {
+    public AiSettings(String apiKey, String deepseekApiKey, Long activeModelId) {
         this.id = 1L;
         this.apiKey = apiKey;
+        this.deepseekApiKey = deepseekApiKey;
         this.activeModelId = activeModelId;
     }
 
