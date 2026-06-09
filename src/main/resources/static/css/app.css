@@ -345,6 +345,27 @@ textarea::placeholder {
     gap: 16px;
 }
 
+.captcha-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 124px;
+    gap: 8px;
+}
+
+.captcha-question {
+    min-height: 44px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 10px;
+    color: var(--color-primary);
+    background: var(--color-surface-alt);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.captcha-question:hover:not([disabled]) {
+    border-color: #b8c5d6;
+}
+
 .auth-slider {
     position: relative;
     display: grid;
@@ -954,7 +975,8 @@ td.actions {
     .overview-grid,
     .panel-form,
     .panel-form.compact-form,
-    .ai-layout {
+    .ai-layout,
+    .captcha-row {
         grid-template-columns: 1fr;
     }
 

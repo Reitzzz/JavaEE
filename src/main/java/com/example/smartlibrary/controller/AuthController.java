@@ -5,6 +5,8 @@ import com.example.smartlibrary.dto.RegisterRequest;
 import com.example.smartlibrary.exception.BusinessException;
 import com.example.smartlibrary.mapper.UserAccountMapper;
 import com.example.smartlibrary.model.UserAccount;
+import com.example.smartlibrary.service.CaptchaService;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,11 +23,23 @@ public class AuthController {
     private final UserAccountMapper userAccountMapper;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final CaptchaService captchaService;
 
-    public AuthController(UserAccountMapper userAccountMapper, PasswordEncoder passwordEncoder, JdbcTemplate jdbcTemplate) {
+    public AuthController(
+            UserAccountMapper userAccountMapper,
+            PasswordEncoder passwordEncoder,
+            JdbcTemplate jdbcTemplate,
+            CaptchaService captchaService
+    ) {
         this.userAccountMapper = userAccountMapper;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
+        this.captchaService = captchaService;
+    }
+
+    @GetMapping("/api/captcha")
+    public Map<String, String> captcha(HttpSession session) {
+        return captchaService.generate(session);
     }
 
     @GetMapping("/api/me")
@@ -38,12 +52,16 @@ public class AuthController {
     }
 
     @PostMapping("/api/register")
-    public Map<String, Object> register(@RequestBody RegisterRequest request) {
+    public Map<String, Object> register(@RequestBody RegisterRequest request, HttpSession session) {
         String username = normalize(request.username());
         String password = normalize(request.password());
         String confirmPassword = normalize(request.confirmPassword());
         String displayName = normalize(request.displayName());
+        String captcha = normalize(request.captcha());
 
+        if (!captchaService.verify(session, captcha)) {
+            throw new BusinessException("验证码错误，请重新输入");
+        }
         if (username.length() < 3 || username.length() > 60) {
             throw new BusinessException("用户名长度需为 3-60 个字符");
         }

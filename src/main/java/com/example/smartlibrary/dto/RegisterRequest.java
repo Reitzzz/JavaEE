@@ -4,6 +4,7 @@ public record RegisterRequest(
         String username,
         String password,
         String confirmPassword,
-        String displayName
+        String displayName,
+        String captcha
 ) {
 }

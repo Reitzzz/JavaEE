@@ -52,6 +52,13 @@
                 <span>密码</span>
                 <input type="password" name="password" autocomplete="current-password" required placeholder="admin123 或 reader123">
             </label>
+            <label class="field">
+                <span>验证码</span>
+                <div class="captcha-row">
+                    <input name="captcha" inputmode="numeric" autocomplete="off" required placeholder="请输入计算结果">
+                    <button class="captcha-question" type="button" data-captcha-refresh data-target-form="loginForm" title="刷新验证码">加载中</button>
+                </div>
+            </label>
             <button class="btn primary wide" type="submit">
                 <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -88,6 +95,13 @@
             <label class="field">
                 <span>确认密码</span>
                 <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="6" placeholder="再次输入密码">
+            </label>
+            <label class="field">
+                <span>验证码</span>
+                <div class="captcha-row">
+                    <input name="captcha" inputmode="numeric" autocomplete="off" required placeholder="请输入计算结果">
+                    <button class="captcha-question" type="button" data-captcha-refresh data-target-form="registerForm" title="刷新验证码">加载中</button>
+                </div>
             </label>
             <button class="btn primary wide" type="submit">
                 <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
