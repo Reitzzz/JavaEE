@@ -33,6 +33,9 @@ public interface BookMapper extends BaseMapper<Book> {
             "WHERE b.id = #{id}")
     Book findByIdWithCategory(@Param("id") Long id);
 
+    @Select("SELECT id FROM books WHERE id = #{id} FOR UPDATE")
+    Long lockById(@Param("id") Long id);
+
     @Update("UPDATE books SET available_copies = available_copies - 1 WHERE id = #{id} AND available_copies > 0")
     int decreaseAvailable(@Param("id") Long id);
 

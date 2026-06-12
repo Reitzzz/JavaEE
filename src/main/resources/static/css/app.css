@@ -764,25 +764,7 @@ td.actions {
     color: #263447;
     background: var(--color-surface-alt);
     overflow: auto;
-    white-space: normal;
-}
-
-.ai-answer > * + * {
-    margin-top: 10px;
-}
-
-.ai-answer ul,
-.ai-answer ol {
-    margin: 10px 0 0;
-    padding-left: 22px;
-}
-
-.ai-answer pre {
-    overflow: auto;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 12px;
-    background: #eef3f8;
+    white-space: pre-wrap;
 }
 
 .ai-answer.loading {

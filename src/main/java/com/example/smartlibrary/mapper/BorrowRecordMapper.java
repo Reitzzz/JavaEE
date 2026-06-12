@@ -32,4 +32,7 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
             "INNER JOIN books b ON b.id = br.book_id " +
             "WHERE br.id = #{id}")
     BorrowRecord findByIdWithDetails(@Param("id") Long id);
+
+    @Select("SELECT * FROM borrow_records WHERE id = #{id} FOR UPDATE")
+    BorrowRecord findByIdForUpdate(@Param("id") Long id);
 }

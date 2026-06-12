@@ -25,6 +25,12 @@ public class BookService {
         return bookMapper.findByIdWithCategory(id);
     }
 
+    public void lockById(Long id) {
+        if (bookMapper.lockById(id) == null) {
+            throw new BusinessException("图书不存在");
+        }
+    }
+
     public Book create(BookRequest request) {
         validate(request);
         int availableCopies = request.availableCopies() == null ? request.totalCopies() : request.availableCopies();

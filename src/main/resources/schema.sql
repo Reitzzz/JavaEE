@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS borrow_records (
     returned_at TIMESTAMP NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'BORROWED',
     CONSTRAINT fk_borrow_user FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT fk_borrow_book FOREIGN KEY (book_id) REFERENCES books(id)
+    CONSTRAINT fk_borrow_book FOREIGN KEY (book_id) REFERENCES books(id),
+    INDEX idx_borrow_user_book_status (user_id, book_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS ai_models (

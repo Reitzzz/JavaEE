@@ -51,6 +51,7 @@ public class BorrowService {
         if ("BLACKLISTED".equals(user.getStatus())) {
             throw new BusinessException("您的账号已被拉黑，暂无借阅权限");
         }
+        bookService.lockById(request.bookId());
         Book book = bookService.findById(request.bookId());
         if (book == null) {
             throw new BusinessException("图书不存在");
@@ -82,7 +83,7 @@ public class BorrowService {
 
     @Transactional
     public void returnBook(Authentication authentication, Long borrowId) {
-        BorrowRecord record = borrowRecordMapper.selectById(borrowId);
+        BorrowRecord record = borrowRecordMapper.findByIdForUpdate(borrowId);
         if (record == null) {
             throw new BusinessException("借阅记录不存在");
         }

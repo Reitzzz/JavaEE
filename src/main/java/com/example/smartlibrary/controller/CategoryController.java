@@ -3,6 +3,7 @@ package com.example.smartlibrary.controller;
 import com.example.smartlibrary.dto.CategoryRequest;
 import com.example.smartlibrary.model.Category;
 import com.example.smartlibrary.service.CategoryService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,12 +30,12 @@ public class CategoryController {
     }
 
     @PostMapping
-    public Category create(@RequestBody CategoryRequest request) {
+    public Category create(@Valid @RequestBody CategoryRequest request) {
         return categoryService.create(request);
     }
 
     @PutMapping("/{id}")
-    public Category update(@PathVariable Long id, @RequestBody CategoryRequest request) {
+    public Category update(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         return categoryService.update(id, request);
     }
 

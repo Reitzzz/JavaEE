@@ -575,7 +575,7 @@ async function askAi() {
             if (!response.ok) {
                 throw new Error("请求失败，HTTP " + response.status);
             }
-            answerNode.innerHTML = "";
+            answerNode.textContent = "";
             answerNode.classList.remove("loading");
             let fullText = "";
             const reader = response.body.getReader();
@@ -590,11 +590,7 @@ async function askAi() {
                 for (let part of parts) {
                     let text = part.split("\n").map(l => l.startsWith("data:") ? l.substring(5) : l).join("\n");
                     fullText += text;
-                    if (typeof marked !== 'undefined') {
-                        answerNode.innerHTML = sanitizeHtml(marked.parse(fullText));
-                    } else {
-                        answerNode.textContent = fullText;
-                    }
+                    answerNode.textContent = fullText;
                 }
             }
         } catch (error) {
@@ -881,22 +877,6 @@ function restoreDialogFocus(dialog) {
         state.lastFocusedElement.focus();
     }
     state.lastFocusedElement = null;
-}
-
-function sanitizeHtml(html) {
-    const container = document.createElement("div");
-    container.innerHTML = html;
-    container.querySelectorAll("script, style, iframe, object, embed").forEach((node) => node.remove());
-    container.querySelectorAll("*").forEach((node) => {
-        [...node.attributes].forEach((attribute) => {
-            const name = attribute.name.toLowerCase();
-            const value = attribute.value.trim().toLowerCase();
-            if (name.startsWith("on") || (["href", "src", "xlink:href"].includes(name) && value.startsWith("javascript:"))) {
-                node.removeAttribute(attribute.name);
-            }
-        });
-    });
-    return container.innerHTML;
 }
 
 function isActiveAiModel(id) {

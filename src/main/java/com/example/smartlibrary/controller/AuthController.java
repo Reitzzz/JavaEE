@@ -7,6 +7,7 @@ import com.example.smartlibrary.mapper.UserAccountMapper;
 import com.example.smartlibrary.model.UserAccount;
 import com.example.smartlibrary.service.CaptchaService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -52,7 +53,7 @@ public class AuthController {
     }
 
     @PostMapping("/api/register")
-    public Map<String, Object> register(@RequestBody RegisterRequest request, HttpSession session) {
+    public Map<String, Object> register(@Valid @RequestBody RegisterRequest request, HttpSession session) {
         String username = normalize(request.username());
         String password = normalize(request.password());
         String confirmPassword = normalize(request.confirmPassword());

@@ -3,6 +3,7 @@ package com.example.smartlibrary.controller;
 import com.example.smartlibrary.dto.BookRequest;
 import com.example.smartlibrary.model.Book;
 import com.example.smartlibrary.service.BookService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,12 +31,12 @@ public class BookController {
     }
 
     @PostMapping
-    public Book create(@RequestBody BookRequest request) {
+    public Book create(@Valid @RequestBody BookRequest request) {
         return bookService.create(request);
     }
 
     @PutMapping("/{id}")
-    public Book update(@PathVariable Long id, @RequestBody BookRequest request) {
+    public Book update(@PathVariable Long id, @Valid @RequestBody BookRequest request) {
         return bookService.update(id, request);
     }
 

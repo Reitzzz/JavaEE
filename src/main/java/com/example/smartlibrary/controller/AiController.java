@@ -10,6 +10,7 @@ import com.example.smartlibrary.mapper.AiModelMapper;
 import com.example.smartlibrary.mapper.AiSettingsMapper;
 import com.example.smartlibrary.service.LlmService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,7 +41,7 @@ public class AiController {
     }
 
     @PostMapping(value = "/chat", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
-    public org.springframework.http.ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> chat(@RequestBody AiChatRequest request) {
+    public org.springframework.http.ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> chat(@Valid @RequestBody AiChatRequest request) {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.setCacheControl(org.springframework.http.CacheControl.noCache());
         headers.set("X-Accel-Buffering", "no"); // 禁用 Nginx 等反向代理的缓存
@@ -56,7 +57,7 @@ public class AiController {
     }
 
     @PostMapping("/models")
-    public AiModel addModel(@RequestBody AiModelRequest request) {
+    public AiModel addModel(@Valid @RequestBody AiModelRequest request) {
         String modelName = request == null ? null : request.modelName();
         String provider = request == null || request.provider() == null || request.provider().isBlank() ? "MiMo" : request.provider();
         llmService.testModel(provider, modelName);
@@ -117,7 +118,7 @@ public class AiController {
     }
 
     @PostMapping("/settings")
-    public Map<String, Object> saveSettings(@RequestBody AiSettingsRequest request) {
+    public Map<String, Object> saveSettings(@Valid @RequestBody AiSettingsRequest request) {
         if (request == null || request.apiKey() == null || request.apiKey().isBlank()) {
             throw new BusinessException("API Key 不能为空");
         }

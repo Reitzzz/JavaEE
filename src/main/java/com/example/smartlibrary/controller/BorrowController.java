@@ -3,6 +3,7 @@ package com.example.smartlibrary.controller;
 import com.example.smartlibrary.dto.BorrowRequest;
 import com.example.smartlibrary.model.BorrowRecord;
 import com.example.smartlibrary.service.BorrowService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +34,7 @@ public class BorrowController {
     }
 
     @PostMapping
-    public BorrowRecord borrow(Authentication authentication, @RequestBody BorrowRequest request) {
+    public BorrowRecord borrow(Authentication authentication, @Valid @RequestBody BorrowRequest request) {
         return borrowService.borrow(authentication, request);
     }
 
